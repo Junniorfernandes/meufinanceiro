@@ -48,10 +48,6 @@ DATA_FILE = "lancamentos.json"
 # --- Funções de Carregamento e Salvamento ---
 
 # Funções de usuário e categorias removidas
-# def salvar_usuarios(): ...
-# def carregar_usuarios(): ...
-# def salvar_categorias(): ...
-# def carregar_categorias(): ...
 
 def salvar_lancamentos():
     """Salva a lista de lançamentos no arquivo JSON."""
@@ -78,15 +74,8 @@ def carregar_lancamentos():
 
 # --- Inicialização de Estado ---
 # Removidos estados de usuário, autenticação e categorias do usuário
-# if 'usuarios' not in st.session_state: carregar_usuarios()
-# if 'pagina_atual' not in st.session_state: st.session_state['pagina_atual'] = 'dashboard'
-# if 'autenticado' not in st.session_state: st.session_state['autenticado'] = False
-# if 'usuario_atual_email' not in st.session_state: st.session_state['usuario_atual_email'] = None
-# if 'usuario_atual_nome' not in st.session_state: st.session_state['usuario_atual_nome'] = None
-# if 'tipo_usuario_atual' not in st.session_state: st.session_state['tipo_usuario_atual'] = None
-# if 'usuario_atual_index' not in st.session_state: st.session_state['usuario_atual_index'] = None
 
-# Variáveis de estado para controlar a exibição dos "popups"/formulários inline
+# Variáveis de estado para controlar a exibição dos "popups"/form
 if 'show_add_modal' not in st.session_state:
     st.session_state['show_add_modal'] = False
 if 'show_edit_modal' not in st.session_state:
@@ -95,8 +84,6 @@ if 'editar_indice' not in st.session_state:
      st.session_state['editar_indice'] = None
 if 'editar_lancamento' not in st.session_state:
      st.session_state['editar_lancamento'] = None
-# if 'editar_usuario_index' not in st.session_state: st.session_state['editar_usuario_index'] = None # Removido
-# if 'editar_usuario_data' not in st.session_state: st.session_state['editar_usuario_data'] = None # Removido
 
 # Carrega os lançamentos ao iniciar o app
 carregar_lancamentos()
@@ -105,51 +92,37 @@ if "lancamentos" not in st.session_state:
 
 # Define as categorias fixas de Receita
 CATEGORIAS_FIXAS_RECEITA = ["Serviços","Vendas"]
-# Não há gestão de categorias de Despesa na UI modificada, mas elas existem nos dados.
+# Não há gestão de categorias de Despesa na UI modificada.
 
 # Funções de usuário e login removidas
-# def excluir_usuario(index): ...
-# def pagina_login(): ...
 
 # --- Funções para Renderizar os Formulários (agora na área principal) ---
 
 def render_add_lancamento_form():
     """Renderiza o formulário para adicionar um novo lançamento."""
-    # Remove autenticação check
-    # if not st.session_state.get('autenticado'): return
-
     with st.expander("Adicionar Novo Lançamento", expanded=True):
-        st.subheader("Adicionar Lançamento") # Título genérico sem nome de usuário
+        st.subheader("Adicionar Lançamento") # Título genérico
 
-        # O formulário contém os campos e o botão de submissão
         with st.form(key="add_lancamento_form"):
             data_str = st.text_input("Data (DD/MM/AAAA)", key="add_lanc_data_form")
             descricao = st.text_input("Descrição", key="add_lanc_descricao_form")
-            # Captura o tipo de lançamento selecionado primeiro
             tipo = st.selectbox("Tipo de Lançamento", ["Receita", "Despesa"], key="add_lanc_tipo_form")
 
-            # Cria um placeholder para a Categoria
             categoria_placeholder = st.empty()
-
             categoria = "" # Inicializa a variável de categoria
-            # Só exibe o campo Categoria dentro do placeholder se o tipo for Receita
+
             if tipo == "Receita":
-                # Usa as categorias fixas diretamente
                 categoria = categoria_placeholder.selectbox(
                     "Categoria",
                     CATEGORIAS_FIXAS_RECEITA, # Usa as categorias fixas
                     key="add_lanc_categoria_receita_form"
                 )
-            # Se o tipo não for Receita, o placeholder permanece vazio, e 'categoria' continua ""
-            # Não há seleção de categoria para Despesa na UI, mas o campo 'Categorias' existe na estrutura de dados.
 
             valor = st.number_input("Valor", format="%.2f", min_value=0.0, key="add_lanc_valor_form")
 
-            # Botão de submissão DENTRO do formulário
             submit_button = st.form_submit_button("Adicionar Lançamento")
 
             if submit_button:
-                # Validação de categoria apenas para Receita
                 if not data_str or not descricao or valor is None or (tipo == "Receita" and not categoria):
                     st.warning("Por favor, preencha todos os campos obrigatórios.")
                 else:
@@ -171,7 +144,6 @@ def render_add_lancamento_form():
                     except ValueError:
                         st.error("Formato de data inválido. Use DD/MM/AAAA.")
 
-        # Botão cancelar FORA do formulário
         if st.button("Cancelar", key="cancel_add_form_button"):
              st.session_state['show_add_modal'] = False
              st.rerun()
@@ -179,8 +151,6 @@ def render_add_lancamento_form():
 
 def render_edit_lancamento_form():
     """Renderiza o formulário para editar um lançamento existente."""
-    # Remove autenticação check
-    # if not st.session_state.get('autenticado') or st.session_state.get('editar_indice') is None: return
     if st.session_state.get('editar_indice') is None:
         return
 
@@ -195,15 +165,9 @@ def render_edit_lancamento_form():
 
     lancamento_a_editar = st.session_state.get("lancamentos", [])[indice]
 
-    # Remove user/admin permission check
-    # is_owner = lancamento_a_editar.get('user_email') == st.session_state.get('usuario_atual_email')
-    # is_admin = st.session_state.get('tipo_usuario_atual') == 'Administrador'
-    # if not (is_owner or is_admin): ... # Removido
-
     with st.expander("Editar Lançamento", expanded=True):
         st.subheader("Editar Lançamento") # Título genérico
 
-        # O formulário contém os campos e o botão de submissão
         with st.form(key=f"edit_lancamento_form_{indice}"):
             lancamento = st.session_state["editar_lancamento"]
 
@@ -213,7 +177,6 @@ def render_edit_lancamento_form():
                 key=f"edit_lanc_data_form_{indice}"
             )
             descricao = st.text_input("Descrição", lancamento.get("Descrição", ""), key=f"edit_lanc_descricao_form_{indice}")
-            # Captura o tipo de lançamento selecionado primeiro
             tipo = st.selectbox(
                 "Tipo de Lançamento",
                 ["Receita", "Despesa"],
@@ -221,21 +184,17 @@ def render_edit_lancamento_form():
                 key=f"edit_lanc_tipo_form_{indice}",
             )
 
-            # Cria um placeholder para a Categoria
             categoria_placeholder = st.empty()
-
             categoria = "" # Inicializa a variável de categoria
-            # Só exibe o campo Categoria dentro do placeholder se o tipo for Receita
+
             if tipo == "Receita":
-                 # Encontra o índice da categoria atual na lista fixa
                  current_category = lancamento.get("Categorias", "")
                  categorias_disponiveis = CATEGORIAS_FIXAS_RECEITA # Usa as categorias fixas
 
                  try:
                      default_index = categorias_disponiveis.index(current_category)
                  except ValueError:
-                     # Se a categoria salva não estiver nas fixas, use a primeira opção
-                     default_index = 0
+                     default_index = 0 # Use a primeira opção se a categoria salva não estiver nas fixas
 
                  categoria = categoria_placeholder.selectbox(
                     "Categoria",
@@ -243,17 +202,14 @@ def render_edit_lancamento_form():
                     index=default_index,
                     key=f"edit_lanc_categoria_receita_form_{indice}",
                 )
-            # Não há seleção de categoria para Despesa na UI de edição.
 
             valor = st.number_input(
                 "Valor", value=lancamento.get("Valor", 0.0), format="%.2f", min_value=0.0, key=f"edit_lanc_valor_form_{indice}"
             )
 
-            # Botão de submissão DENTRO do formulário
             submit_button = st.form_submit_button("Salvar Edição")
 
             if submit_button:
-                 # Validação de categoria apenas para Receita
                 if not data_str or not descricao or valor is None or (tipo == "Receita" and not categoria):
                     st.warning("Por favor, preencha todos os campos obrigatórios.")
                 else:
@@ -276,7 +232,6 @@ def render_edit_lancamento_form():
                     except ValueError:
                         st.error("Formato de data inválido. Use DD/MM/AAAA.")
 
-        # Botão cancelar FORA do formulário
         if st.button("Cancelar Edição", key=f"cancel_edit_form_button_{indice}"):
             st.session_state['editar_indice'] = None
             st.session_state['editar_lancamento'] = None
@@ -288,7 +243,7 @@ def exibir_resumo_central():
     """Exibe o resumo financeiro (Receitas, Despesas, Total)."""
     st.subheader("Resumo Financeiro")
 
-    # Remove user filtering and admin view - exibe todos os lançamentos
+    # Exibe todos os lançamentos
     lancamentos_filtrados = st.session_state.get("lancamentos", [])
     st.info("Exibindo resumo de todos os lançamentos.") # Mensagem genérica
 
@@ -328,12 +283,12 @@ def exibir_resumo_central():
 # Função para exportar lançamentos para Excel
 def exportar_lancamentos_para_excel(lancamentos_list):
     """Exporta a lista de lançamentos para um arquivo Excel."""
-    # Remove user_email filtering during export
     lancamentos_para_df = []
     for lancamento in lancamentos_list:
         lancamento_copy = lancamento.copy()
-        # if 'user_email' in lancamento_copy: # Removido
-        #     del lancamento_copy['user_email'] # Removido (garante que não vai pro excel se estiver nos dados antigos)
+        # Remove campo 'user_email' se existir
+        if 'user_email' in lancamento_copy:
+             del lancamento_copy['user_email']
         lancamentos_para_df.append(lancamento_copy)
 
     df = pd.DataFrame(lancamentos_para_df)
@@ -347,7 +302,6 @@ def exportar_lancamentos_para_excel(lancamentos_list):
 
         if 'Valor' in df.columns:
              try:
-                # Mantendo a formatação original R$ X,XX
                 df['Valor'] = df['Valor'].apply(lambda x: f"R$ {x:.2f}".replace('.', ','))
              except Exception as e:
                  st.warning(f"Erro ao formatar a coluna 'Valor' para exportação Excel: {e}")
@@ -371,27 +325,21 @@ def exportar_lancamentos_para_pdf(lancamentos_list):
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
 
-    # Tenta adicionar uma fonte que suporte acentos. Se não encontrar, usa Arial padrão.
-    # Certifique-se de ter um arquivo .ttf (como Arial_Unicode.ttf ou similar) no mesmo diretório do seu script,
-    # ou remova o try/except e use apenas "Arial" se não precisar de acentos no PDF.
+    # Tenta adicionar uma fonte que suporte acentos.
     try:
-        # Substitua 'Arial_Unicode.ttf' pelo caminho ou nome do seu arquivo .ttf se necessário e se ele existir.
+        # Verifique se o arquivo da fonte existe ou remova esta seção.
         pdf.add_font('Arial_Unicode', '', 'Arial_Unicode.ttf')
         pdf.set_font('Arial_Unicode', '', 12)
         font_for_table = 'Arial_Unicode'
     except Exception as e:
-         # O warning aparece no log, não no PDF. Mantenha se quiser depurar fontes.
-         # st.warning(f"Erro ao carregar fonte personalizada para PDF: {e}. Usando fonte padrão.")
          pdf.set_font("Arial", '', 12)
          font_for_table = 'Arial'
 
-
-    pdf.set_font("Arial", 'B', 12) # Use negrito da fonte padrão para o título
+    pdf.set_font("Arial", 'B', 12)
     report_title = "Relatório Detalhado de Lançamentos" # Título genérico
     pdf.cell(0, 10, report_title.encode('latin1', 'replace').decode('latin1'), 0, 1, 'C')
     pdf.ln(10)
 
-    # Usa a fonte com suporte a acentos (se carregada) ou a padrão para os cabeçalhos e dados da tabela
     pdf.set_font(font_for_table, 'B', 10) # Cabeçalhos em negrito
     col_widths = [20, 50, 30, 20, 20]
     headers = ["Data", "Descrição", "Categoria", "Tipo", "Valor"]
@@ -408,7 +356,7 @@ def exportar_lancamentos_para_pdf(lancamentos_list):
             data_formatada = lancamento.get("Data", "Data Inválida")
 
         descricao = lancamento.get("Descrição", "")
-        categoria = lancamento.get("Categorias", "") # Usa o que estiver no campo 'Categorias'
+        categoria = lancamento.get("Categorias", "")
         tipo = lancamento.get("Tipo de Lançamento", "")
         valor_formatado = f"R$ {lancamento.get('Valor', 0.0):.2f}".replace('.', ',')
 
@@ -420,8 +368,19 @@ def exportar_lancamentos_para_pdf(lancamentos_list):
 
         pdf.ln()
 
-    pdf_output = pdf.output(dest='S')
-    return io.BytesIO(pdf_output)
+    pdf_output = pdf.output(dest='S') # Deve retornar bytes
+
+    # --- CORREÇÃO START ---
+    # Garante que a saída é bytes antes de criar BytesIO
+    if isinstance(pdf_output, str):
+        # Codifica a string para bytes usando 'latin-1', que geralmente funciona bem com PDF
+        pdf_output_bytes = pdf_output.encode('latin-1')
+    else:
+        # Se já for bytes, usa diretamente
+        pdf_output_bytes = pdf_output
+
+    return io.BytesIO(pdf_output_bytes)
+    # --- CORREÇÃO END ---
 
 
 # --- FUNÇÃO para gerar a Demonstração de Resultados em PDF ---
@@ -431,16 +390,13 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list):
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
 
-    # Tenta adicionar uma fonte que suporte acentos. Se não encontrar, usa Arial padrão.
-    # Certifique-se de ter um arquivo .ttf (como Arial_Unicode.ttf ou similar) no mesmo diretório do seu script,
-    # ou remova o try/except e use apenas "Arial" se não precisar de acentos no PDF.
+    # Tenta adicionar uma fonte que suporte acentos.
     try:
-        # Substitua 'Arial_Unicode.ttf' pelo caminho ou nome do seu arquivo .ttf se necessário e se ele existir.
+        # Verifique se o arquivo da fonte existe ou remova esta seção.
         pdf.add_font('Arial_Unicode', '', 'Arial_Unicode.ttf')
         pdf.set_font('Arial_Unicode', '', 12)
         font_for_text = 'Arial_Unicode'
     except Exception as e:
-         # st.warning(f"Erro ao carregar fonte personalizada para PDF: {e}. Usando fonte padrão (pode não suportar acentos).")
          pdf.set_font("Arial", '', 12)
          font_for_text = 'Arial'
 
@@ -458,7 +414,6 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list):
 
     for lancamento in lancamentos_list:
         tipo = lancamento.get("Tipo de Lançamento")
-        # Usa "Sem Categoria" se a chave não existir ou for vazia para agrupamento na DRE
         categoria = lancamento.get("Categorias", "Sem Categoria") if lancamento.get("Categorias") else "Sem Categoria"
         valor = lancamento.get("Valor", 0.0)
 
@@ -474,45 +429,41 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list):
             total_despesas += valor
 
     # --- Adicionar Receitas ao PDF ---
-    pdf.set_font(font_for_text, 'B', 12) # Título da seção em negrito
+    pdf.set_font(font_for_text, 'B', 12)
     pdf.cell(0, 10, "Receitas".encode('latin1', 'replace').decode('latin1'), 0, 1, 'L')
     pdf.ln(2)
 
-    pdf.set_font(font_for_text, '', 10) # Conteúdo da seção em fonte normal
-    # Ordenar categorias de receita alfabeticamente para consistência
+    pdf.set_font(font_for_text, '', 10)
     for categoria in sorted(receitas_por_categoria.keys()):
         valor = receitas_por_categoria[categoria]
-        # Garante alinhamento com duas células: categoria à esquerda, valor à direita
         pdf.cell(100, 7, f"- {categoria}".encode('latin1', 'replace').decode('latin1'), 0, 0, 'L')
         pdf.cell(0, 7, f"R$ {valor:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
 
-    pdf.set_font(font_for_text, 'B', 10) # Total em negrito
+    pdf.set_font(font_for_text, 'B', 10)
     pdf.cell(100, 7, "Total Receitas".encode('latin1', 'replace').decode('latin1'), 0, 0, 'L')
     pdf.cell(0, 7, f"R$ {total_receitas:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
-    pdf.ln(10) # Espaço após a seção de Receitas
+    pdf.ln(10)
 
     # --- Adicionar Despesas ao PDF ---
-    pdf.set_font(font_for_text, 'B', 12) # Título da seção em negrito
+    pdf.set_font(font_for_text, 'B', 12)
     pdf.cell(0, 10, "Despesas".encode('latin1', 'replace').decode('latin1'), 0, 1, 'L')
     pdf.ln(2)
 
-    pdf.set_font(font_for_text, '', 10) # Conteúdo da seção em fonte normal
-     # Ordenar categorias de despesa alfabeticamente
+    pdf.set_font(font_for_text, '', 10)
     for categoria in sorted(despesas_por_categoria.keys()):
         valor = despesas_por_categoria[categoria]
         pdf.cell(100, 7, f"- {categoria}".encode('latin1', 'replace').decode('latin1'), 0, 0, 'L')
         pdf.cell(0, 7, f"R$ {valor:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
 
-    pdf.set_font(font_for_text, 'B', 10) # Total em negrito
+    pdf.set_font(font_for_text, 'B', 10)
     pdf.cell(100, 7, "Total Despesas".encode('latin1', 'replace').replace('.', ',').decode('latin1'), 0, 0, 'L')
     pdf.cell(0, 7, f"R$ {total_despesas:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
-    pdf.ln(10) # Espaço após a seção de Despesas
+    pdf.ln(10)
 
     # --- Adicionar Resultado Líquido ---
     resultado_liquido = total_receitas - total_despesas
-    pdf.set_font(font_for_text, 'B', 12) # Resultado em negrito
+    pdf.set_font(font_for_text, 'B', 12)
 
-    # Cor do resultado líquido: Azul para positivo, Vermelho para negativo
     if resultado_liquido >= 0:
         pdf.set_text_color(0, 0, 255) # Azul para lucro
     else:
@@ -521,25 +472,34 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list):
     pdf.cell(100, 10, "Resultado Líquido".encode('latin1', 'replace').decode('latin1'), 0, 0, 'L')
     pdf.cell(0, 10, f"R$ {resultado_liquido:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
 
-    # Resetar cor do texto para preto para qualquer texto futuro (se houver)
     pdf.set_text_color(0, 0, 0)
 
-    # Finaliza o PDF e retorna como BytesIO
-    pdf_output = pdf.output(dest='S')
-    return io.BytesIO(pdf_output)
+    pdf_output = pdf.output(dest='S') # Deve retornar bytes
+
+    # --- CORREÇÃO START ---
+    # Garante que a saída é bytes antes de criar BytesIO
+    if isinstance(pdf_output, str):
+        # Codifica a string para bytes usando 'latin-1', que geralmente funciona bem com PDF
+        pdf_output_bytes = pdf_output.encode('latin-1')
+    else:
+        # Se já for bytes, usa diretamente
+        pdf_output_bytes = pdf_output
+
+    return io.BytesIO(pdf_output_bytes)
+    # --- CORREÇÃO END ---
 
 
 def exibir_lancamentos():
     """Exibe a tabela de lançamentos com opções de edição e exclusão."""
     st.subheader("Lançamentos Registrados") # Título genérico
 
-    # Remove user filtering - exibe todos os lançamentos
+    # Exibe todos os lançamentos
     lancamentos_para_exibir = st.session_state.get("lancamentos", [])
     st.info("Exibindo todos os lançamentos registrados.") # Mensagem genérica
 
     if not lancamentos_para_exibir:
         st.info("Nenhum lançamento encontrado.")
-        # Exibe os botões de exportação mesmo com lista vazia (arquivos estarão vazios ou com cabeçalho)
+        # Exibe os botões de exportação mesmo com lista vazia
         col_excel, col_pdf_lista, col_pdf_dr = st.columns([1, 1, 1])
         with col_excel:
              excel_buffer = exportar_lancamentos_para_excel([]) # Passa lista vazia
@@ -567,12 +527,10 @@ def exibir_lancamentos():
                 mime='application/pdf'
              )
         st.markdown("---")
-        return # Sai da função para não exibir a tabela vazia
-
+        return # Sai da função
 
     # Ordenar lançamentos por data (do mais recente para o mais antigo)
     try:
-        # Usamos a lista que já contém todos os lançamentos
         lancamentos_para_exibir.sort(key=lambda x: datetime.strptime(x.get('Data', '1900-01-01'), '%Y-%m-%d'), reverse=True)
     except ValueError:
         st.warning("Não foi possível ordenar os lançamentos por data devido a formato inválido.")
@@ -609,44 +567,29 @@ def exibir_lancamentos():
 
     st.markdown("---") # Separador
 
-
     # --- Exibir Lançamentos em Tabela ---
-    # Prepare a lista de lançamentos para exibição na tabela
     dados_para_tabela = []
     for i, lancamento in enumerate(lancamentos_para_exibir):
-        # Cria uma cópia para não modificar o dicionário original na lista session_state
         lancamento_copy = lancamento.copy()
 
-        # Adiciona colunas de ação (usando key baseada no índice para unicidade)
-        # As ações reais serão botões abaixo da tabela, mas mantemos a coluna para consistência visual se necessário
-        # lancamento_copy['Ações'] = "" # Coluna vazia na exibição da tabela
-
-        # Formata a data para exibição
         try:
             lancamento_copy['Data'] = datetime.strptime(lancamento_copy.get("Data", '1900-01-01'), "%Y-%m-%d").strftime("%d/%m/%Y")
         except ValueError:
-            lancamento_copy['Data'] = lancamento_copy.get("Data", "Data Inválida") # Mantém o valor original se o formato for inválido
+            lancamento_copy['Data'] = lancamento_copy.get("Data", "Data Inválida")
 
-        # Formata o valor para exibição
         lancamento_copy['Valor'] = f"R$ {lancamento_copy.get('Valor', 0.0):.2f}".replace('.', ',')
 
-        # Remove a coluna 'user_email' da exibição se ela existir
         if 'user_email' in lancamento_copy:
              del lancamento_copy['user_email']
 
         dados_para_tabela.append(lancamento_copy)
 
-    # Converte a lista para DataFrame para exibição
     df_exibicao = pd.DataFrame(dados_para_tabela)
 
-    # Define as colunas a serem exibidas e a ordem (removendo a coluna "Ações" da tabela)
     colunas_exibicao = ["Data", "Descrição", "Categorias", "Tipo de Lançamento", "Valor"]
-    # Verifica se as colunas existem antes de selecioná-las
     colunas_validas = [col for col in colunas_exibicao if col in df_exibicao.columns]
     df_exibicao = df_exibicao[colunas_validas]
 
-
-    # Exibe a tabela interativa
     st.dataframe(
         df_exibicao,
         use_container_width=True,
@@ -663,13 +606,9 @@ def exibir_lancamentos():
     # --- Botões de Ação (Editar/Excluir) Abaixo da Tabela ---
     st.subheader("Ações nos Lançamentos")
 
-    # Usa colunas para alinhar os botões de ação ao lado de cada item da tabela
-    # Ajuste o número de colunas se a tabela tiver muitos itens para evitar quebra de linha excessiva
     num_lancamentos = len(lancamentos_para_exibir)
     if num_lancamentos > 0:
-        # Define o número de colunas para os botões de ação.
-        # Pode ajustar este valor (ex: 5, 10, 20) dependendo de quantos botões cabem em uma linha.
-        cols_por_linha = 5
+        cols_por_linha = 5 # Ajuste este valor conforme necessário
         num_linhas_botoes = (num_lancamentos + cols_por_linha - 1) // cols_por_linha
 
         for linha in range(num_linhas_botoes):
@@ -677,30 +616,25 @@ def exibir_lancamentos():
              for i in range(cols_por_linha):
                  idx_global = linha * cols_por_linha + i
                  if idx_global < num_lancamentos:
-                     # Obtenha o lançamento original da lista ordenada para saber seu índice real
                      lancamento_original = lancamentos_para_exibir[idx_global]
-                     # Encontra o índice original na lista session_state['lancamentos'] (sem ordenação)
                      try:
                           indice_original = st.session_state['lancamentos'].index(lancamento_original)
                      except ValueError:
-                          continue # Pula se o lançamento não for encontrado (improvável)
+                          continue
 
                      with cols_acoes[i]:
-                        # Botão Editar
-                        if st.button("Editar", key=f"btn_editar_{indice_original}", help=f"Editar lançamento: {lancamento_original.get('Descrição', '')}"):
+                        if st.button("Editar", key=f"btn_editar_{indice_original}", help=f"Editar: {lancamento_original.get('Descrição', '')}"):
                             st.session_state['editar_indice'] = indice_original
-                            # Copia o lançamento para um estado temporário para preencher o formulário
                             st.session_state['editar_lancamento'] = st.session_state['lancamentos'][indice_original].copy()
                             st.session_state['show_edit_modal'] = True
-                            st.session_state['show_add_modal'] = False # Garante que o outro modal esteja fechado
+                            st.session_state['show_add_modal'] = False
                             st.rerun()
 
-                        # Botão Excluir
-                        if st.button("Excluir", key=f"btn_excluir_{indice_original}", help=f"Excluir lançamento: {lancamento_original.get('Descrição', '')}", type="secondary"):
+                        if st.button("Excluir", key=f"btn_excluir_{indice_original}", help=f"Excluir: {lancamento_original.get('Descrição', '')}", type="secondary"):
                             del st.session_state['lancamentos'][indice_original]
                             salvar_lancamentos()
                             st.success("Lançamento excluído com sucesso!")
-                            st.session_state['editar_indice'] = None # Limpa o estado de edição se estiver ativo para este item
+                            st.session_state['editar_indice'] = None
                             st.session_state['editar_lancamento'] = None
                             st.rerun()
 
@@ -710,16 +644,14 @@ def main():
     """Função principal que renderiza o dashboard."""
     st.title("Sistema de Lançamentos Financeiros")
 
-    # Controla a exibição dos formulários de Adicionar ou Editar
     if st.session_state.get('show_add_modal', False):
          render_add_lancamento_form()
     elif st.session_state.get('show_edit_modal', False):
          render_edit_lancamento_form()
     else:
-        # Se nenhum formulário estiver aberto, exibe o botão para adicionar e as outras seções
         if st.button("Adicionar Novo Lançamento"):
              st.session_state['show_add_modal'] = True
-             st.session_state['show_edit_modal'] = False # Ensure edit is closed
+             st.session_state['show_edit_modal'] = False
              st.rerun()
 
         exibir_resumo_central()
