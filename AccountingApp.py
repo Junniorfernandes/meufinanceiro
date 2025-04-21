@@ -50,7 +50,7 @@ USUARIOS_FILE = "usuarios.json"
 
 def salvar_usuarios():
     with open(USUARIOS_FILE, "w") as f:
-        json.dump(st.session_state.get('usuarios', []), f, indent=4) # Adicionado indent para melhor legibilidade
+        json.dump(st.session_state.get('usuarios', []), f)
 
 def carregar_usuarios():
     if os.path.exists(USUARIOS_FILE):
@@ -66,53 +66,18 @@ def carregar_usuarios():
                          # Mantendo a estrutura original do seu código que não tinha categorias de despesa no usuário
                     st.session_state['usuarios'] = usuarios
                 else:
-                    # --- INÍCIO DA ALTERAÇÃO SOLICITADA: Adicionar admin padrão se o arquivo estiver vazio ---
-                    st.session_state['usuarios'] = [
-                         {
-                            "Nome": "Junior Fernandes",
-                            "Email": "valmirfernandescontabilidade@gmail.com",
-                            # !!! DEFINA UMA SENHA SEGURA AQUI PARA O ADMINISTRADOR INICIAL !!!
-                            "Senha": "DEFINA_UMA_SENHA_PROVISORIA_SEGURA", # <--- MODIFIQUE ESTA LINHA
-                            "Tipo": "Administrador",
-                            "categorias_receita": ["Serviços", "Vendas"] # Categorias iniciais para este admin
-                        }
-                    ]
-                    salvar_usuarios() # Salva o admin inicial no arquivo
-                    # --- FIM DA ALTERAÇÃO SOLICITADA ---
+                    st.session_state['usuarios'] = []
         except json.JSONDecodeError:
             st.error("Erro ao decodificar o arquivo de usuários. Criando um novo.")
-            # --- INÍCIO DA ALTERAÇÃO SOLICITADA: Adicionar admin padrão em caso de erro de decodificação ---
-            st.session_state['usuarios'] = [
-                 {
-                    "Nome": "Junior Fernandes",
-                    "Email": "valmirfernandescontabilidade@gmail.com",
-                    # !!! DEFINA UMA SENHA SEGURA AQUI PARA O ADMINISTRADOR INICIAL !!!
-                    "Senha": "DEFINA_UMA_SENHA_PROVISORIA_SEGURA", # <--- MODIFIQUE ESTA LINHA
-                    "Tipo": "Administrador",
-                    "categorias_receita": ["Serviços", "Vendas"] # Categorias iniciais para este admin
-                }
-            ]
-            salvar_usuarios() # Salva o admin inicial no arquivo
-            # --- FIM DA ALTERAÇÃO SOLICITADA ---
+            st.session_state['usuarios'] = []
+            salvar_usuarios()
     else:
-        # --- INÍCIO DA ALTERAÇÃO SOLICITADA: Adicionar admin padrão se o arquivo não existir ---
-        st.session_state['usuarios'] = [
-             {
-                "Nome": "Junior Fernandes",
-                "Email": "valmirfernandescontabilidade@gmail.com",
-                # !!! DEFINA UMA SENHA SEGURA AQUI PARA O ADMINISTRADOR INICIAL !!!
-                "Senha": "DEFINA_UMA_SENHA_PROVISORIA_SEGURA", # <--- MODIFIQUE ESTA LINHA
-                "Tipo": "Administrador",
-                "categorias_receita": ["Serviços", "Vendas"] # Categorias iniciais para este admin
-            }
-        ]
-        salvar_usuarios() # Salva o admin inicial no arquivo
-        # --- FIM DA ALTERAÇÃO SOLICITADA ---
+        st.session_state['usuarios'] = []
 
 
 def salvar_lancamentos():
     with open(DATA_FILE, "w") as f:
-        json.dump(st.session_state.get("lancamentos", []), f, indent=4) # Adicionado indent
+        json.dump(st.session_state.get("lancamentos", []), f)
 
 def carregar_lancamentos():
     if os.path.exists(DATA_FILE):
@@ -725,17 +690,17 @@ def exibir_lancamentos():
          # Botão para a sua função original de exportação (lista detalhada)
          pdf_lista_buffer = exportar_lancamentos_para_pdf(lancamentos_para_exibir, usuario_para_pdf_title)
          st.download_button(
-            label="📄 Exportar Lista PDF",
+            label="📄 Exportar Lançamentos em PDF", # Rótulo claro para a lista detalhada
             data=pdf_lista_buffer,
             file_name=f'lista_lancamentos_{filename_suffix}_{datetime.now().strftime("%Y%m%d")}.pdf',
             mime='application/pdf'
          )
 
     with col_pdf_dr:
-         # Botão para a nova Demonstração de Resultados em PDF
+         # Adicione o novo botão para a Demonstração de Resultados
          pdf_dr_buffer = gerar_demonstracao_resultados_pdf(lancamentos_para_exibir, usuario_para_pdf_title)
          st.download_button(
-            label="📊 Exportar DR PDF",
+            label="📊 Exportar Relatório de Resultados em PDF", # Rótulo para a Demonstração de Resultados
             data=pdf_dr_buffer,
             file_name=f'demonstracao_resultados_{filename_suffix}_{datetime.now().strftime("%Y%m%d")}.pdf',
             mime='application/pdf'
@@ -744,396 +709,358 @@ def exibir_lancamentos():
 
     st.markdown("---")
 
+    # AQUI ESTÁ A MODIFICAÇÃO: Aumentando a proporção da última coluna (Ações) para 4 ou 5
+    # Você pode testar 4 ou 5. Vou usar 4 aqui, mas sinta-se à vontade para ajustar.
+    col_header_data, col_header_descricao, col_header_categoria, col_header_tipo, col_header_valor, col_header_acoes = st.columns(
+        [2, 3, 2, 2, 2, 4] # Proporção da última coluna aumentada para 4
+    )
+    col_header_data.markdown("**Data**")
+    col_header_descricao.markdown("**Descrição**")
+    col_header_categoria.markdown("**Categoria**")
+    col_header_tipo.markdown("**Tipo**")
+    col_header_valor.markdown("**Valor**")
+    col_header_acoes.markdown("**Ações**")
 
-    # --- Exibir Tabela de Lançamentos ---
-
-    # Cria um DataFrame pandas para facilitar a exibição
-    df_lancamentos = pd.DataFrame(lancamentos_para_exibir)
-
-    if not df_lancamentos.empty:
-        # Formata a coluna 'Data' para DD/MM/AAAA para exibição
-        if 'Data' in df_lancamentos.columns:
-             try:
-                df_lancamentos['Data'] = pd.to_datetime(df_lancamentos['Data']).dt.strftime('%d/%m/%Y')
-             except Exception as e:
-                 st.warning(f"Erro ao formatar a coluna 'Data' para exibição: {e}")
-
-        # Formata a coluna 'Valor' para R$ X.XX
-        if 'Valor' in df_lancamentos.columns:
-             try:
-                df_lancamentos['Valor'] = df_lancamentos['Valor'].apply(lambda x: f"R$ {x:.2f}")
-             except Exception as e:
-                 st.warning(f"Erro ao formatar a coluna 'Valor' para exibição: {e}")
-
-        # Remove a coluna 'user_email' da exibição da tabela
-        if 'user_email' in df_lancamentos.columns:
-            df_lancamentos = df_lancamentos.drop(columns=['user_email'])
-
-
-        # --- Exibir Tabela Interativa ---
-        # Adiciona botões de ação para cada linha
-        acoes = []
-        for i in range(len(df_lancamentos)):
-             # Encontra o índice original do lançamento na lista global 'st.session_state["lancamentos"]'
-             # A maneira mais robusta é buscar o dicionário correspondente
-             lancamento_original = None
-             original_index = -1
-             # Iterar sobre a lista original para encontrar o item correspondente
-             for j, l in enumerate(st.session_state.get("lancamentos", [])):
-                 # Comparar com base em um identificador único, ou em todos os campos se não houver ID
-                 # Neste caso, vamos comparar o dicionário inteiro (pode ser lento para listas grandes)
-                 # Uma abordagem melhor seria adicionar um ID único a cada lançamento
-                 if l == lancamentos_para_exibir[i]:
-                     original_index = j
-                     lancamento_original = l
-                     break
+    # Iteramos diretamente sobre a lista de lançamentos para exibir (que já está filtrada)
+    for i, lancamento in enumerate(lancamentos_para_exibir):
+         # Precisamos encontrar o índice original na lista completa para exclusão/edição
+         # Isso é necessário porque removemos do índice na lista completa.
+         # Se a lista de lançamentos for muito grande, isso pode ser ineficiente.
+         # Uma alternativa seria armazenar o índice original no dicionário do lançamento.
+        try:
+            original_index = st.session_state.get("lancamentos", []).index(lancamento)
+        except ValueError:
+             # Se por algum motivo o lançamento não for encontrado na lista completa, pule
+             continue
 
 
-             if original_index != -1: # Garante que encontrou o índice original
-                 # Cria um contêiner para os botões de ação em cada linha
-                 cols = st.columns([0.5, 0.5]) # Duas colunas pequenas para os botões
-                 with cols[0]:
-                     # Botão Editar - Usa o índice original do lançamento na lista global
-                     if st.button("✏️", key=f"edit_lancamento_{original_index}", help="Editar lançamento"):
-                         st.session_state['editar_indice'] = original_index
-                         st.session_state['editar_lancamento'] = lancamento_original # Usa o lançamento encontrado
-                         st.session_state['show_edit_modal'] = True # Exibe o modal de edição
-                         st.rerun() # Recarrega para mostrar o modal
+        # AQUI ESTÁ A MODIFICAÇÃO: Usando a mesma nova proporção para as colunas de dados
+        col1, col2, col3, col4, col5, col6 = st.columns([2, 3, 2, 2, 2, 4]) # Proporção da última coluna aumentada para 4
+        try:
+             data_formatada = datetime.strptime(lancamento.get("Data", '1900-01-01'), "%Y-%m-%d").strftime("%d/%m/%Y")
+        except ValueError:
+             data_formatada = lancamento.get("Data", "Data Inválida")
 
-                 with cols[1]:
-                     # Botão Excluir - Usa o índice original do lançamento na lista global
-                     if st.button("🗑️", key=f"delete_lancamento_{original_index}", help="Excluir lançamento", type="secondary"):
-                         # Lógica de exclusão (assumindo que delete_lancamento existe e usa o índice)
-                         # Antes de excluir, confirme se o usuário logado é o dono ou um administrador
-                         is_owner = lancamento_original.get('user_email') == st.session_state.get('usuario_atual_email')
-                         is_admin = st.session_state.get('tipo_usuario_atual') == 'Administrador'
+        col1.write(data_formatada)
+        col2.write(lancamento.get("Descrição", ""))
+        col3.write(lancamento.get("Categorias", ""))
+        col4.write(lancamento.get("Tipo de Lançamento", ""))
+        col5.write(f"R$ {lancamento.get('Valor', 0.0):.2f}")
 
-                         if is_owner or is_admin:
-                             # Adiciona um botão de confirmação na sidebar
-                             st.sidebar.warning(f"Confirma exclusão do lançamento com ID original {original_index}?")
-                             if st.sidebar.button("Sim, Excluir", key=f"confirm_delete_{original_index}"):
-                                 del st.session_state["lancamentos"][original_index]
-                                 salvar_lancamentos()
-                                 st.sidebar.empty() # Limpa o botão de confirmação da sidebar
-                                 st.success("Lançamento excluído com sucesso!")
-                                 st.rerun()
-                             if st.sidebar.button("Não, Cancelar", key=f"cancel_delete_{original_index}"):
-                                  st.sidebar.empty() # Limpa os botões da sidebar
-                                  st.info("Exclusão cancelada.")
-                                  st.rerun() # Recarrega para limpar a confirmação
-                         else:
-                             st.error("Você não tem permissão para excluir este lançamento.")
-                             st.rerun() # Recarrega para remover o botão de confirmação se ele apareceu indevidamente
+        with col6:
+            is_owner = lancamento.get('user_email') == st.session_state.get('usuario_atual_email')
+            is_admin = st.session_state.get('tipo_usuario_atual') == 'Administrador'
 
-
-        # Exibe a tabela de dados
-        st.dataframe(df_lancamentos, use_container_width=True)
-
-    st.markdown("---") # Separador no final
+            # Usamos o original_index para as chaves dos botões
+            if (is_owner or is_admin) and not st.session_state.get('show_add_modal') and not st.session_state.get('show_edit_modal'):
+                # Ajusta as colunas para os botões de ação - MANTENDO O DEFAULT DE [1, 1]
+                # Como a coluna 6 principal ficou mais larga, as sub-colunas dentro dela
+                # também ficarão mais largas automaticamente.
+                col_editar, col_excluir = st.columns(2) # Mantendo o default [1, 1]
+                with col_editar:
+                    if st.button("Editar", key=f"editar_{original_index}"):
+                        st.session_state["editar_indice"] = original_index
+                        st.session_state["editar_lancamento"] = st.session_state["lancamentos"][original_index].copy()
+                        st.session_state['show_edit_modal'] = True
+                        st.rerun()
+                with col_excluir:
+                    # Para excluir, removemos pelo original_index na lista completa
+                    if st.button("Excluir", key=f"excluir_{original_index}"):
+                        del st.session_state["lancamentos"][original_index]
+                        salvar_lancamentos()
+                        st.success("Lançamento excluído com sucesso!")
+                        st.rerun()
+            elif not (is_owner or is_admin):
+                 st.write("Sem permissão")
 
 
-def gerenciar_usuarios():
-    if st.session_state.get('tipo_usuario_atual') != 'Administrador':
-        st.error("Você não tem permissão para acessar esta página.")
+def pagina_dashboard():
+    if not st.session_state.get('autenticado'):
+        st.warning("Você precisa estar logado para acessar o dashboard.")
         return
 
-    st.subheader("Gerenciar Usuários")
+    col_nav1, _ = st.columns(2)
+    if col_nav1.button("⚙️ Configurações"):
+        st.session_state['pagina_atual'] = 'configuracoes'
+        st.rerun()
 
-    # Carrega usuários novamente para garantir que a lista está atualizada
-    carregar_usuarios()
+    st.title(f"Controle Financeiro - {st.session_state.get('usuario_atual_nome', 'Usuário')}")
+    exibir_resumo_central()
 
-    # Botão para adicionar novo usuário (abre modal/expander)
-    # TODO: Implementar um formulário para adicionar usuário
+    modal_ativo = st.session_state.get('show_add_modal') or st.session_state.get('show_edit_modal')
 
-    if not st.session_state.get('usuarios'):
-        st.info("Nenhum usuário cadastrado.")
-        return
-
-    # --- Exibir Tabela de Usuários ---
-    usuarios_para_df = []
-    for i, usuario in enumerate(st.session_state.get('usuarios', [])):
-        # Cria uma cópia e remove a senha para não exibir na tabela
-        usuario_copy = usuario.copy()
-        if 'Senha' in usuario_copy:
-            del usuario_copy['Senha']
-        # Adiciona o índice original para referência nas ações
-        usuario_copy['Original_Index'] = i
-        usuarios_para_df.append(usuario_copy)
-
-
-    df_usuarios = pd.DataFrame(usuarios_para_df)
-
-    # Reorganiza as colunas para exibir o índice no início
-    if 'Original_Index' in df_usuarios.columns:
-         cols = ['Original_Index'] + [col for col in df_usuarios.columns if col != 'Original_Index']
-         df_usuarios = df_usuarios[cols]
-         # Renomeia a coluna para algo mais amigável ou remove se preferir
-         df_usuarios = df_usuarios.rename(columns={'Original_Index': 'ID'})
-
-
-    st.dataframe(df_usuarios, use_container_width=True)
-
-    # --- Ações por Usuário (Editar/Excluir) ---
-    st.markdown("---")
-    st.subheader("Ações por Usuário (pelo ID)")
-
-    # Input para o ID do usuário para ações
-    # Garante que min_value não seja maior que max_value em listas vazias
-    max_idx = len(st.session_state.get('usuarios', [])) - 1
-    user_id_action = st.number_input("Digite o ID do usuário para Ação:", min_value=0, max_value=max_idx if max_idx >= 0 else 0, step=1, format="%d")
-
-
-    # Verifica se o ID é válido
-    if st.session_state.get('usuarios') and 0 <= user_id_action < len(st.session_state['usuarios']):
-        usuario_selecionado = st.session_state['usuarios'][user_id_action]
-        st.write(f"Usuário selecionado: **{usuario_selecionado.get('Nome', 'N/A')}** ({usuario_selecionado.get('Email', 'N/A')})")
-
-        col_editar, col_excluir = st.columns(2)
-
-        with col_editar:
-            # Botão para Editar Usuário (abre modal/expander)
-            if st.button("Editar Usuário", key=f"edit_user_{user_id_action}"):
-                 # Define as variáveis de estado para abrir o modal de edição de usuário
-                 st.session_state['editar_usuario_index'] = user_id_action
-                 st.session_state['editar_usuario_data'] = st.session_state['usuarios'][user_id_action].copy() # Carrega os dados para o formulário
-                 # st.session_state['show_edit_user_modal'] = True # Você precisará de um modal de usuário
-                 st.rerun() # Recarrega para mostrar o formulário de edição
-
-        with col_excluir:
-             # Botão para Excluir Usuário
-            if st.button("Excluir Usuário", key=f"delete_user_{user_id_action}", type="secondary"):
-                 # Confirmação antes de excluir
-                 if user_id_action != st.session_state.get('usuario_atual_index'):
-                     # Adiciona um botão de confirmação na sidebar
-                     st.sidebar.warning(f"Confirma exclusão do usuário ID {user_id_action}?")
-                     if st.sidebar.button("Sim, Excluir Usuário", key=f"confirm_delete_user_{user_id_action}"):
-                         excluir_usuario(user_id_action) # Chama a função de exclusão
-                         st.sidebar.empty() # Limpa o botão de confirmação
-                     if st.sidebar.button("Não, Cancelar Exclusão", key=f"cancel_delete_user_{user_id_action}"):
-                          st.sidebar.empty() # Limpa os botões da sidebar
-                          st.info("Exclusão de usuário cancelada.")
-                          st.rerun() # Recarrega para limpar a confirmação
-                 else:
-                     st.warning("Você não pode excluir o seu próprio usuário enquanto estiver logado.")
-                     st.rerun() # Recarrega para remover o botão de confirmação se ele apareceu indevidamente
-
-    elif st.session_state.get('usuarios'):
-        st.warning("ID de usuário inválido.")
-
-
-# --- Formulário de Edição de Usuário (em expander ou modal) ---
-def render_edit_usuario_form():
-    # Só renderiza se autenticado como admin e com um usuário selecionado para editar
-    if st.session_state.get('tipo_usuario_atual') != 'Administrador' or st.session_state.get('editar_usuario_index') is None:
-        return
-
-    index = st.session_state['editar_usuario_index']
-    usuario_a_editar = st.session_state.get('editar_usuario_data')
-
-    if usuario_a_editar is None:
-         st.error("Dados do usuário para edição não encontrados.")
-         st.session_state['editar_usuario_index'] = None
-         st.session_state['editar_usuario_data'] = None
-         st.rerun()
-         return
-
-
-    with st.expander(f"Editar Usuário ID {index}", expanded=True):
-        st.subheader(f"Editar Usuário: {usuario_a_editar.get('Nome', 'N/A')}")
-
-        with st.form(key=f"edit_user_form_{index}"):
-            nome = st.text_input("Nome", value=usuario_a_editar.get("Nome", ""), key=f"edit_user_nome_{index}")
-            email = st.text_input("E-mail", value=usuario_a_editar.get("Email", ""), key=f"edit_user_email_{index}")
-            senha = st.text_input("Nova Senha (deixe vazio para manter a atual)", type="password", key=f"edit_user_senha_{index}")
-            tipo = st.selectbox(
-                "Tipo de Usuário",
-                ["Administrador", "Cliente"],
-                index=["Administrador", "Cliente"].index(usuario_a_editar.get("Tipo", "Cliente")),
-                key=f"edit_user_tipo_{index}"
-            )
-
-            # Campo para categorias de receita (se aplicável ao seu modelo de usuário)
-            # Assumindo que você pode querer editar as categorias de receita aqui também
-            # Converta a lista para string separada por vírgula para o input
-            categorias_str = ", ".join(usuario_a_editar.get("categorias_receita", []))
-            novas_categorias_str = st.text_input("Categorias de Receita (separadas por vírgula)", value=categorias_str, key=f"edit_user_categorias_{index}")
-
-
-            submit_button = st.form_submit_button("Salvar Alterações")
-
-            if submit_button:
-                if not nome or not email:
-                    st.warning("Nome e E-mail são obrigatórios.")
-                else:
-                    # Atualiza os dados do usuário
-                    st.session_state['usuarios'][index]['Nome'] = nome
-                    st.session_state['usuarios'][index]['Email'] = email
-                    if senha: # Atualiza a senha apenas se um novo valor for fornecido
-                         st.session_state['usuarios'][index]['Senha'] = senha # Considere hash de senha em produção!
-                    st.session_state['usuarios'][index]['Tipo'] = tipo
-                    # Processa a string de categorias de volta para lista
-                    st.session_state['usuarios'][index]['categorias_receita'] = [cat.strip() for cat in novas_categorias_str.split(',') if cat.strip()]
-
-
-                    salvar_usuarios()
-                    st.success("Usuário atualizado com sucesso!")
-
-                    # Se o usuário logado editou a si mesmo, atualiza as variáveis de sessão
-                    if index == st.session_state.get('usuario_atual_index'):
-                         st.session_state['usuario_atual_nome'] = nome
-                         st.session_state['usuario_atual_email'] = email
-                         st.session_state['tipo_usuario_atual'] = tipo
-                         # Atualiza as categorias de receita no estado da sessão se o tipo for Cliente
-                         if tipo == 'Cliente':
-                             usuario_categorias_receita = st.session_state['usuarios'][index].get('categorias_receita', [])
-                             todas_unicas_receita = list(dict.fromkeys(CATEGORIAS_PADRAO_RECEITA + usuario_categorias_receita))
-                             st.session_state['todas_categorias_receita'] = todas_unicas_receita
-                         else: # Admin vê todas as categorias padrão + as do usuário logado
-                              todas_unicas_receita = list(dict.fromkeys(CATEGORIAS_PADRAO_RECEITA + [cat for u in st.session_state['usuarios'] for cat in u.get('categorias_receita', [])]))
-                              st.session_state['todas_categorias_receita'] = todas_unicas_receita
-
-
-                    st.session_state['editar_usuario_index'] = None
-                    st.session_state['editar_usuario_data'] = None
-                    # st.session_state['show_edit_user_modal'] = False
-                    st.rerun()
-
-        # Botão cancelar Edição de Usuário
-        if st.button("Cancelar Edição", key=f"cancel_edit_user_form_{index}"):
-            st.session_state['editar_usuario_index'] = None
-            st.session_state['editar_usuario_data'] = None
-            # st.session_state['show_edit_user_modal'] = False
+    if not modal_ativo:
+        if st.button("➕ Adicionar Novo Lançamento"):
+            st.session_state['show_add_modal'] = True
             st.rerun()
+        exibir_lancamentos() # Chama a função exibir_lancamentos corrigida
 
-# --- Formulário de Adição de Usuário (em expander ou modal) ---
-def render_add_usuario_form():
-    # Só renderiza se autenticado como admin
-    if st.session_state.get('tipo_usuario_atual') != 'Administrador':
+    elif st.session_state.get('show_add_modal'):
+        render_add_lancamento_form()
+
+    elif st.session_state.get('show_edit_modal'):
+         render_edit_lancamento_form()
+
+
+def pagina_configuracoes():
+    if not st.session_state.get('autenticado'):
+        st.warning("Você precisa estar logado para acessar as configurações.")
         return
 
-    # Controle para exibir/ocultar o formulário de adição
-    if st.button("Adicionar Novo Usuário"):
-         st.session_state['show_add_user_modal'] = True
+    col_nav1, _ = st.columns(2)
+    if col_nav1.button("📊 Voltar para os Lançamentos"):
+        st.session_state['pagina_atual'] = 'dashboard'
+        st.rerun()
 
-    if st.session_state.get('show_add_user_modal'):
-        with st.expander("Adicionar Novo Usuário", expanded=True):
-            st.subheader("Novo Usuário")
+    st.title("Configurações")
 
-            with st.form(key="add_user_form"):
-                novo_nome = st.text_input("Nome", key="add_user_nome")
-                novo_email = st.text_input("E-mail", key="add_user_email")
-                nova_senha = st.text_input("Senha", type="password", key="add_user_senha")
-                novo_tipo = st.selectbox("Tipo de Usuário", ["Administrador", "Cliente"], key="add_user_tipo")
+    usuario_logado_email = st.session_state.get('usuario_atual_email')
+    usuario_logado_index = st.session_state.get('usuario_atual_index')
 
-                # Campo para categorias de receita para o novo usuário (se aplicável)
-                novas_categorias_str = st.text_input("Categorias de Receita (separadas por vírgula)", value=", ".join(CATEGORIAS_PADRAO_RECEITA), key="add_user_categorias")
+    # Verificação adicional para garantir que o índice do usuário logado é válido
+    if usuario_logado_index is not None and 0 <= usuario_logado_index < len(st.session_state.get('usuarios', [])):
+        usuario_logado = st.session_state['usuarios'][usuario_logado_index]
 
-                submit_button = st.form_submit_button("Adicionar Usuário")
+        st.subheader(f"Editar Meu Perfil ({usuario_logado.get('Tipo', 'Tipo Desconhecido')})")
+        edit_nome_proprio = st.text_input("Nome", usuario_logado.get('Nome', ''), key="edit_meu_nome")
+        st.text_input("E-mail", usuario_logado.get('Email', ''), disabled=True)
+        nova_senha_propria = st.text_input("Nova Senha (deixe em branco para manter)", type="password", value="", key="edit_minha_nova_senha")
+        confirmar_nova_senha_propria = st.text_input("Confirmar Nova Senha", type="password", value="", key="edit_confirmar_minha_nova_senha")
 
-                if submit_button:
-                    if not novo_nome or not novo_email or not nova_senha:
-                        st.warning("Nome, E-mail e Senha são obrigatórios.")
-                    else:
-                        # Verifica se o e-mail já existe
-                        if any(u.get('Email') == novo_email for u in st.session_state.get('usuarios', [])):
-                             st.warning(f"Já existe um usuário com o e-mail '{novo_email}'.")
+        if st.button("Salvar Alterações no Perfil"):
+            if nova_senha_propria == confirmar_nova_senha_propria:
+                st.session_state['usuarios'][usuario_logado_index]['Nome'] = edit_nome_proprio
+                if nova_senha_propria:
+                    st.session_state['usuarios'][usuario_logado_index]['Senha'] = nova_senha_propria
+                salvar_usuarios()
+                st.success("Perfil atualizado com sucesso!")
+                st.session_state['usuario_atual_nome'] = edit_nome_proprio
+                st.rerun()
+            else:
+                st.error("As novas senhas não coincidem.")
+    else:
+        st.error("Erro ao carregar informações do seu usuário.")
+
+
+    # --- Campo para adicionar e gerenciar categorias de Receitas (agora específicas por usuário) ---
+    st.subheader("Gerenciar Categorias de Receitas")
+    st.markdown("---")
+
+    # Verificação adicional antes de tentar gerenciar categorias
+    if usuario_logado_index is not None and 0 <= usuario_logado_index < len(st.session_state.get('usuarios', [])):
+        # Garante que a chave 'categorias_receita' existe para o usuário logado (conforme original)
+        if 'categorias_receita' not in st.session_state['usuarios'][usuario_logado_index]:
+            st.session_state['usuarios'][usuario_logado_index]['categorias_receita'] = []
+
+        usuario_categorias_atuais = st.session_state['usuarios'][usuario_logado_index]['categorias_receita']
+        # Inclui as categorias padrão apenas para exibição e verificação de duplicidade
+        todas_categorias_receita_disponiveis = CATEGORIAS_PADRAO_RECEITA + usuario_categorias_atuais
+
+        nova_categoria_receita = st.text_input("Nome da Nova Categoria de Receita", key="nova_categoria_receita_input")
+        if st.button("Adicionar Categoria de Receita"):
+            if nova_categoria_receita:
+                # Verifica se a categoria já existe (case-insensitive check) na lista combinada do usuário
+                if nova_categoria_receita.lower() not in [c.lower() for c in todas_categorias_receita_disponiveis]:
+                    # Adiciona a nova categoria à lista personalizada do usuário logado
+                    st.session_state['usuarios'][usuario_logado_index]['categorias_receita'].append(nova_categoria_receita)
+                    salvar_usuarios()
+                    # Atualiza a lista combinada de categorias na sessão para o usuário logado
+                    st.session_state['todas_categorias_receita'] = list(dict.fromkeys(CATEGORIAS_PADRAO_RECEITA + st.session_state['usuarios'][usuario_logado_index]['categorias_receita']))
+
+                    st.success(f"Categoria '{nova_categoria_receita}' adicionada com sucesso às suas categorias de receita!")
+                    st.rerun() # Rerun para atualizar o selectbox imediatamente
+                else:
+                    st.warning(f"A categoria '{nova_categoria_receita}' já existe nas suas categorias de receita ou nas padrão.")
+            else:
+                st.warning("Por favor, digite o nome da nova categoria de receita.")
+
+        st.subheader("Suas Categorias de Receitas Personalizadas")
+        # Exibe as categorias personalizadas com opção de exclusão
+        if usuario_categorias_atuais:
+             st.write("Clique no botão 'Excluir' ao lado de uma categoria personalizada para removê-la.")
+
+             # Filtra lançamentos do usuário logado para verificar uso da categoria
+             lancamentos_do_usuario = [
+                 l for l in st.session_state.get("lancamentos", [])
+                 if l.get('user_email') == usuario_logado_email and l.get('Tipo de Lançamento') == 'Receita'
+             ]
+             categorias_receita_em_uso = {l.get('Categorias') for l in lancamentos_do_usuario if l.get('Categorias')}
+
+
+             # Itera sobre categorias personalizadas para exibir e permitir exclusão
+             for i, categoria in enumerate(usuario_categorias_atuais):
+                 col_cat, col_del = st.columns([3, 1])
+                 col_cat.write(categoria)
+                 # Verifica se a categoria está em uso em algum lançamento de receita do usuário
+                 if categoria in categorias_receita_em_uso:
+                     col_del.write("Em uso")
+                 else:
+                      if col_del.button("Excluir", key=f"del_cat_receita_{i}"):
+                            # Remove a categoria da lista personalizada do usuário
+                            del st.session_state['usuarios'][usuario_logado_index]['categorias_receita'][i]
+                            salvar_usuarios()
+                            # Atualiza a lista combinada na sessão
+                            st.session_state['todas_categorias_receita'] = list(dict.fromkeys(CATEGORIAS_PADRAO_RECEITA + st.session_state['usuarios'][usuario_logado_index]['categorias_receita']))
+                            st.success(f"Categoria '{categoria}' excluída com sucesso!")
+                            st.rerun()
+        else:
+             st.info("Você ainda não adicionou nenhuma categoria de receita personalizada.")
+
+    else:
+        st.error("Erro ao carregar informações de categorias para o seu usuário.")
+
+
+    # --- Manter apenas a seção de Gerenciar Usuários para Admin ---
+    # Removendo a seção de gerenciar categorias de Despesas que eu adicionei antes
+    if st.session_state.get('tipo_usuario_atual') == 'Administrador':
+        st.markdown("---")
+        st.subheader("Gerenciar Usuários (Apenas Admin)")
+
+        if st.session_state.get('editar_usuario_index') is not None:
+            render_edit_usuario_form()
+        else:
+            with st.expander("Adicionar Novo Usuário", expanded=False):
+                st.subheader("Adicionar Novo Usuário")
+                with st.form(key="add_usuario_form"):
+                    novo_nome = st.text_input("Nome", key="add_user_nome")
+                    novo_email = st.text_input("E-mail", key="add_user_email")
+                    nova_senha = st.text_input("Senha", type="password", key="add_user_senha")
+                    novo_tipo = st.selectbox("Tipo", ["Cliente", "Administrador"], key="add_user_tipo")
+                    submit_user_button = st.form_submit_button("Adicionar Usuário")
+
+                    if submit_user_button:
+                        if not novo_nome or not novo_email or not nova_senha or not novo_tipo:
+                            st.warning("Por favor, preencha todos os campos para o novo usuário.")
+                        elif any(u.get('Email') == novo_email for u in st.session_state.get('usuarios', [])):
+                             st.warning(f"E-mail '{novo_email}' já cadastrado.")
                         else:
-                            # Processa a string de categorias para lista
-                            categorias_lista = [cat.strip() for cat in novas_categorias_str.split(',') if cat.strip()]
-
                             novo_usuario = {
                                 "Nome": novo_nome,
                                 "Email": novo_email,
-                                "Senha": nova_senha, # Considere hash de senha em produção!
+                                "Senha": nova_senha, # Em um app real, use hashing de senha!
                                 "Tipo": novo_tipo,
-                                "categorias_receita": categorias_lista
+                                "categorias_receita": [], # Inicializa categorias personalizadas (mantido conforme original)
+                                # Não adiciona categorias_despesa aqui, mantendo o original
                             }
-                            if 'usuarios' not in st.session_state:
-                                 st.session_state['usuarios'] = []
                             st.session_state['usuarios'].append(novo_usuario)
                             salvar_usuarios()
                             st.success(f"Usuário '{novo_nome}' adicionado com sucesso!")
-                            st.session_state['show_add_user_modal'] = False
                             st.rerun()
 
-            # Botão cancelar Adição de Usuário
-            if st.button("Cancelar", key="cancel_add_user_form"):
-                st.session_state['show_add_user_modal'] = False
+            st.subheader("Lista de Usuários")
+            if st.session_state.get('usuarios'):
+                col_user_nome, col_user_email, col_user_tipo, col_user_acoes = st.columns([3, 4, 2, 3])
+                col_user_nome.markdown("**Nome**")
+                col_user_email.markdown("**E-mail**")
+                col_user_tipo.markdown("**Tipo**")
+                col_user_acoes.markdown("**Ações**")
+
+                # Não liste o próprio usuário Admin para evitar que ele se exclua acidentalmente
+                usuarios_para_listar = [u for u in st.session_state['usuarios'] if u.get('Email') != usuario_logado_email]
+
+
+                for i, usuario in enumerate(usuarios_para_listar):
+                    # Precisamos encontrar o índice ORIGINAL na lista completa para exclusão/edição
+                    try:
+                         original_user_index = st.session_state['usuarios'].index(usuario)
+                    except ValueError:
+                         continue # Pula se não encontrar (não deveria acontecer)
+
+                    col1, col2, col3, col4 = st.columns([3, 4, 2, 3])
+                    col1.write(usuario.get('Nome', ''))
+                    col2.write(usuario.get('Email', ''))
+                    col3.write(usuario.get('Tipo', ''))
+
+                    with col4:
+                         col_edit_user, col_del_user = st.columns(2)
+                         with col_edit_user:
+                              if st.button("Editar", key=f"edit_user_{original_user_index}"):
+                                  st.session_state['editar_usuario_index'] = original_user_index
+                                  st.session_state['editar_usuario_data'] = st.session_state['usuarios'][original_user_index].copy()
+                                  st.rerun()
+                         with col_del_user:
+                              # Só permite excluir se não for o usuário logado
+                              if usuario.get('Email') != usuario_logado_email:
+                                   if st.button("Excluir", key=f"del_user_{original_user_index}", help="Excluir este usuário"):
+                                        # Confirmação simples (opcional)
+                                        # if st.checkbox(f"Confirmar exclusão de {usuario.get('Nome', '')}", key=f"confirm_del_user_{original_user_index}"):
+                                        excluir_usuario(original_user_index)
+                              else:
+                                   st.write("Não pode excluir a si mesmo")
+
+            else:
+                 st.info("Nenhum outro usuário cadastrado.")
+
+    elif st.session_state.get('tipo_usuario_atual') == 'Cliente':
+        st.markdown("---")
+        st.subheader("Gerenciar Usuários")
+        st.info("Esta seção está disponível apenas para administradores.")
+
+
+def render_edit_usuario_form():
+    if st.session_state.get('editar_usuario_index') is None:
+        return
+
+    index = st.session_state['editar_usuario_index']
+    usuario_a_editar = st.session_state.get('usuarios', [])[index]
+
+    # Verifica se o usuário logado é administrador e não está tentando editar a si mesmo através deste modal
+    if st.session_state.get('tipo_usuario_atual') != 'Administrador' or usuario_a_editar.get('Email') == st.session_state.get('usuario_atual_email'):
+        st.error("Você não tem permissão para editar este usuário desta forma.")
+        st.session_state['editar_usuario_index'] = None
+        st.session_state['editar_usuario_data'] = None
+        st.rerun()
+        return
+
+    with st.expander(f"Editar Usuário: {usuario_a_editar.get('Nome', '')}", expanded=True):
+        st.subheader(f"Editar Usuário: {usuario_a_editar.get('Nome', '')}")
+        with st.form(key=f"edit_usuario_form_{index}"):
+            # Usamos a cópia em st.session_state['editar_usuario_data'] para preencher o formulário
+            edit_nome = st.text_input("Nome", st.session_state['editar_usuario_data'].get('Nome', ''), key=f"edit_user_nome_{index}")
+            st.text_input("E-mail", st.session_state['editar_usuario_data'].get('Email', ''), disabled=True, key=f"edit_user_email_{index}")
+            edit_senha = st.text_input("Nova Senha (deixe em branco para manter)", type="password", value="", key=f"edit_user_senha_{index}")
+            edit_tipo = st.selectbox("Tipo", ["Cliente", "Administrador"], index=["Cliente", "Administrador"].index(st.session_state['editar_usuario_data'].get('Tipo', 'Cliente')), key=f"edit_user_tipo_{index}")
+
+            submit_edit_user_button = st.form_submit_button("Salvar Edição do Usuário")
+
+            if submit_edit_user_button:
+                # Atualiza os dados na lista original
+                st.session_state['usuarios'][index]['Nome'] = edit_nome
+                if edit_senha: # Atualiza a senha apenas se uma nova foi digitada
+                    st.session_state['usuarios'][index]['Senha'] = edit_senha # Lembre-se: em um app real, use hashing
+                st.session_state['usuarios'][index]['Tipo'] = edit_tipo
+
+                salvar_usuarios()
+                st.success("Usuário atualizado com sucesso!")
+                st.session_state['editar_usuario_index'] = None
+                st.session_state['editar_usuario_data'] = None
                 st.rerun()
 
+        if st.button("Cancelar Edição", key=f"cancel_edit_user_form_{index}"):
+            st.session_state['editar_usuario_index'] = None
+            st.session_state['editar_usuario_data'] = None
+            st.rerun()
 
 
-# --- Menu de Navegação ---
-def menu_navegacao():
-    st.sidebar.title("Navegação")
-    if st.session_state.get('autenticado'):
-        st.sidebar.write(f"Bem-vindo, {st.session_state.get('usuario_atual_nome', 'Usuário')}!")
-        st.sidebar.button("Dashboard", on_click=lambda: st.session_state.update({'pagina_atual': 'dashboard', 'show_add_modal': False, 'show_edit_modal': False, 'editar_indice': None, 'editar_lancamento': None, 'editar_usuario_index': None, 'editar_usuario_data': None, 'show_add_user_modal': False})) # Resetar modals ao navegar
-        st.sidebar.button("Lançamentos", on_click=lambda: st.session_state.update({'pagina_atual': 'lancamentos', 'show_add_modal': False, 'show_edit_modal': False, 'editar_indice': None, 'editar_lancamento': None, 'editar_usuario_index': None, 'editar_usuario_data': None, 'show_add_user_modal': False})) # Resetar modals ao navegar
+# --- Navegação entre Páginas ---
 
-        if st.session_state.get('tipo_usuario_atual') == 'Administrador':
-             st.sidebar.button("Gerenciar Usuários", on_click=lambda: st.session_state.update({'pagina_atual': 'gerenciar_usuarios', 'show_add_modal': False, 'show_edit_modal': False, 'editar_indice': None, 'editar_lancamento': None, 'editar_usuario_data': None, 'show_add_user_modal': False})) # Resetar modals ao navegar
+if st.session_state.get('autenticado'):
+    if st.session_state['pagina_atual'] == 'dashboard':
+        pagina_dashboard()
+    elif st.session_state['pagina_atual'] == 'configuracoes':
+        pagina_configuracoes()
+else:
+    pagina_login()
 
-        st.sidebar.button("Logout", on_click=pagina_logout)
-    else:
-        st.sidebar.button("Login", on_click=lambda: st.session_state.update({'pagina_atual': 'login', 'show_add_modal': False, 'show_edit_modal': False, 'editar_indice': None, 'editar_lancamento': None, 'editar_usuario_index': None, 'editar_usuario_data': None, 'show_add_user_modal': False})) # Resetar modals ao navegar
-
-
-# --- Conteúdo da Página ---
-def main():
-    menu_navegacao()
-
-    # Renderiza os formulários modais/expanders ANTES do conteúdo principal
-    # para que eles apareçam sobre o conteúdo quando acionados.
-    # A visibilidade é controlada pelas variáveis de estado (show_add_modal, show_edit_modal, etc.)
-    if st.session_state.get('show_add_modal'):
-         render_add_lancamento_form()
-
-    if st.session_state.get('show_edit_modal'):
-         render_edit_lancamento_form()
-
-    # Adicionado renderização dos formulários de usuário
-    # Nota: Seção 'Gerenciar Usuários' já tem a lógica para renderizar os formulários
-    # de adicionar e editar usuário dentro dela. Manter aqui pode duplicar ou causar conflitos.
-    # Vamos removê-los daqui e deixar a renderização apenas dentro de gerenciar_usuarios.
-    # if st.session_state.get('tipo_usuario_atual') == 'Administrador':
-    #      if st.session_state.get('show_add_user_modal'):
-    #           render_add_usuario_form()
-    #      if st.session_state.get('editar_usuario_index') is not None:
-    #          render_edit_usuario_form()
-
-
-    # Conteúdo principal da página, baseado na página_atual
-    if not st.session_state.get('autenticado'):
-        pagina_login()
-    else:
-        if st.session_state['pagina_atual'] == 'dashboard':
-            st.title("Dashboard Financeiro")
-            exibir_resumo_central()
-            # Botão para Adicionar Lançamento (agora abre/fecha o expander)
-            if st.button("Adicionar Novo Lançamento", key="open_add_modal_button"):
-                 st.session_state['show_add_modal'] = True
-                 st.rerun() # Recarrega para mostrar o expander
-
-            exibir_lancamentos() # Exibe a lista de lançamentos na dashboard também
-
-        elif st.session_state['pagina_atual'] == 'lancamentos':
-            st.title("Lista de Lançamentos")
-            # Botão para Adicionar Lançamento (agora abre/fecha o expander)
-            if st.button("Adicionar Novo Lançamento", key="open_add_modal_button_lancamentos"):
-                 st.session_state['show_add_modal'] = True
-                 st.rerun() # Recarrega para mostrar o expander
-            exibir_lancamentos()
-
-        elif st.session_state['pagina_atual'] == 'gerenciar_usuarios':
-             gerenciar_usuarios()
-             # Renderiza os formulários de usuário APENAS nesta página
-             # render_add_usuario_form() # Renderiza o botão e o modal/expander
-             if st.session_state.get('show_add_user_modal'):
-                 render_add_usuario_form()
-             if st.session_state.get('editar_usuario_index') is not None:
-                 render_edit_usuario_form()
-
-
-if __name__ == "__main__":
-    main()
+# --- Logout ---
+if st.session_state.get('autenticado'):
+    if st.sidebar.button("Sair"):
+        st.session_state['autenticado'] = False
+        st.session_state['usuario_atual_email'] = None
+        st.session_state['usuario_atual_nome'] = None
+        st.session_state['tipo_usuario_atual'] = None
+        st.session_state['usuario_atual_index'] = None
+        st.session_state['todas_categorias_receita'] = CATEGORIAS_PADRAO_RECEITA.copy() # Reseta categorias de receita
+        # Não reseta categorias de despesa, pois não eram gerenciadas por usuário no original
+        st.session_state['pagina_atual'] = 'dashboard' # Redireciona para o login
+        st.rerun()
