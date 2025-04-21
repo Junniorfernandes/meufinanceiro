@@ -62,7 +62,7 @@ def carregar_usuarios():
         },
         {
             "Usuario": "Junior Fernandes",
-            "email": "valmirfernandescontabilidade@gmail.com",
+            "email": "valmirfernandescontabilidade@hmail.com",
             "Senha": "123456",
             "Funcao": "Cliente"
         },
