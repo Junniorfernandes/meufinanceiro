@@ -503,8 +503,8 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
 
     # Adiciona assinaturas no final do PDF de lançamentos
     y_atual = pdf.get_y()
-    pdf.line(11, y_atual, 200, y_atual)  # linha horizontal de margem a margem
-    pdf.ln(5)
+    pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
+    pdf.ln(10)
 
     signatario_nome = st.session_state.get('usuarios', [])[st.session_state.get('usuario_atual_index', 0)].get("SignatarioNome", "")
     signatario_cargo = st.session_state.get('usuarios', [])[st.session_state.get('usuario_atual_index', 0)].get("SignatarioCargo", "")
