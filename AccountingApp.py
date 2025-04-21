@@ -575,6 +575,8 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
 
     pdf.set_font(font_for_text, '', 10) # Conteúdo da seção em fonte normal
      # Ordenar categorias de despesa alfabeticamente
+    
+    # Classificação das Despesas Administrativas
     total_despesas = sum(despesas_por_categoria.values())
     pdf.cell(100, 7, "Despesas Administrativas".encode('latin1', 'replace').decode('latin1'), 0, 0, 'L')
     pdf.cell(0, 7, f"R$ {total_despesas:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
