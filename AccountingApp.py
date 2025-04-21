@@ -956,7 +956,8 @@ def pagina_cadastro():
                     # Botão Excluir para cada usuário
                     # Adicionado kind="secondary" para aplicar o estilo CSS de exclusão
                     # Adapte a lógica de exclusão de usuário se precisar de confirmação também
-                    if st.button("🗑️ Excluir", key=f"delete_usuario_{index}", kind="secondary"):
+                    # --- CORREÇÃO AQUI: Removido kind="secondary" do botão de excluir usuário ---
+                    if st.button("🗑️ Excluir", key=f"delete_usuario_{index}"):
                          # Confirmação antes de excluir (opcional, mas recomendado)
                          # Nota: A lógica de confirmação de usuário aqui é a original e pode ser adaptada
                          # para o novo padrão de estado se desejar uma experiência consistente.
