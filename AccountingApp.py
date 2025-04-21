@@ -1107,7 +1107,7 @@ with st.sidebar:
         st.write(f"Bem-vindo, {st.session_state.get('usuario_atual_nome')}!")
         st.write(f"Tipo: {st.session_state.get('tipo_usuario_atual')}")
 
-        st.button("Dashboard", on_click=navegar_para, args=('dashboard',))
+        st.button("Lançamentos", on_click=navegar_para, args=('dashboard',))
         if st.session_state.get('tipo_usuario_atual') == 'Administrador':
             st.button("Gerenciar Usuários", on_click=navegar_para, args=('gerenciar_usuarios',))
         # Botão para gerenciar categorias (agora disponível para todos os usuários autenticados)
