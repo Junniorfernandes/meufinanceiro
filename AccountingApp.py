@@ -836,6 +836,11 @@ def pagina_configuracoes():
                 st.session_state['usuarios'][usuario_logado_index]['Nome'] = edit_nome_proprio
                 if nova_senha_propria:
                     st.session_state['usuarios'][usuario_logado_index]['Senha'] = nova_senha_propria
+                    
+                    # SALVA SIGNATÁRIO
+st.session_state['usuarios'][usuario_logado_index]['SignatarioNome'] = signatario_nome
+st.session_state['usuarios'][usuario_logado_index]['SignatarioCargo'] = signatario_cargo
+
                 salvar_usuarios()
                 st.success("Perfil atualizado com sucesso!")
                 st.session_state['usuario_atual_nome'] = edit_nome_proprio
