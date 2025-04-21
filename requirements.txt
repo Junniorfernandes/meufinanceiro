@@ -1,5 +1,8 @@
 streamlit
+datetime
+json
+os
 pandas
+io
 fpdf
 openpyxl
-psycopg2-binary
