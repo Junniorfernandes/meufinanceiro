@@ -337,7 +337,8 @@ def exportar_lancamentos_para_pdf(lancamentos_list):
 
     pdf.set_font("Arial", 'B', 12)
     report_title = "Relatório Detalhado de Lançamentos" # Título genérico
-    pdf.cell(0, 10, report_title.encode('latin1', 'replace').decode('latin1'), 0, 1, 'C')
+    # Passa a string diretamente para cell
+    pdf.cell(0, 10, report_title, 0, 1, 'C')
     pdf.ln(10)
 
     pdf.set_font(font_for_table, 'B', 10) # Cabeçalhos em negrito
@@ -345,7 +346,8 @@ def exportar_lancamentos_para_pdf(lancamentos_list):
     headers = ["Data", "Descrição", "Categoria", "Tipo", "Valor"]
 
     for i, header in enumerate(headers):
-        pdf.cell(col_widths[i], 10, header.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C', fill=False)
+        # Passa a string diretamente para cell
+        pdf.cell(col_widths[i], 10, header, 1, 0, 'C', fill=False)
     pdf.ln()
 
     pdf.set_font(font_for_table, '', 10) # Dados da tabela em fonte normal
@@ -360,27 +362,24 @@ def exportar_lancamentos_para_pdf(lancamentos_list):
         tipo = lancamento.get("Tipo de Lançamento", "")
         valor_formatado = f"R$ {lancamento.get('Valor', 0.0):.2f}".replace('.', ',')
 
-        pdf.cell(col_widths[0], 10, data_formatada.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C')
-        pdf.cell(col_widths[1], 10, descricao.encode('latin1', 'replace').decode('latin1'), 1, 0, 'L')
-        pdf.cell(col_widths[2], 10, categoria.encode('latin1', 'replace').decode('latin1') if categoria else "", 1, 0, 'C')
-        pdf.cell(col_widths[3], 10, tipo.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C')
-        pdf.cell(col_widths[4], 10, valor_formatado.encode('latin1', 'replace').decode('latin1'), 1, 0, 'R')
+        # Passa as strings diretamente para cell
+        pdf.cell(col_widths[0], 10, data_formatada, 1, 0, 'C')
+        pdf.cell(col_widths[1], 10, descricao, 1, 0, 'L')
+        pdf.cell(col_widths[2], 10, categoria if categoria else "", 1, 0, 'C')
+        pdf.cell(col_widths[3], 10, tipo, 1, 0, 'C')
+        pdf.cell(col_widths[4], 10, valor_formatado, 1, 0, 'R')
 
         pdf.ln()
 
     pdf_output = pdf.output(dest='S') # Deve retornar bytes
 
-    # --- CORREÇÃO START ---
     # Garante que a saída é bytes antes de criar BytesIO
     if isinstance(pdf_output, str):
-        # Codifica a string para bytes usando 'latin-1', que geralmente funciona bem com PDF
         pdf_output_bytes = pdf_output.encode('latin-1')
     else:
-        # Se já for bytes, usa diretamente
         pdf_output_bytes = pdf_output
 
     return io.BytesIO(pdf_output_bytes)
-    # --- CORREÇÃO END ---
 
 
 # --- FUNÇÃO para gerar a Demonstração de Resultados em PDF ---
@@ -401,9 +400,10 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list):
          font_for_text = 'Arial'
 
 
-    pdf.set_font(font_for_text, 'B', 14) # Título principal com fonte negrito
+    pdf.set_font(font_for_text, 'B', 14)
     report_title = "Demonstração de Resultados" # Título genérico
-    pdf.cell(0, 10, report_title.encode('latin1', 'replace').decode('latin1'), 0, 1, 'C')
+    # Passa a string diretamente para cell
+    pdf.cell(0, 10, report_title, 0, 1, 'C')
     pdf.ln(10)
 
     # --- Processar dados para a Demonstração de Resultados ---
@@ -430,34 +430,40 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list):
 
     # --- Adicionar Receitas ao PDF ---
     pdf.set_font(font_for_text, 'B', 12)
-    pdf.cell(0, 10, "Receitas".encode('latin1', 'replace').decode('latin1'), 0, 1, 'L')
+    # Passa a string diretamente para cell
+    pdf.cell(0, 10, "Receitas", 0, 1, 'L')
     pdf.ln(2)
 
     pdf.set_font(font_for_text, '', 10)
     for categoria in sorted(receitas_por_categoria.keys()):
         valor = receitas_por_categoria[categoria]
-        pdf.cell(100, 7, f"- {categoria}".encode('latin1', 'replace').decode('latin1'), 0, 0, 'L')
-        pdf.cell(0, 7, f"R$ {valor:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
+        # Passa as strings diretamente para cell
+        pdf.cell(100, 7, f"- {categoria}", 0, 0, 'L')
+        pdf.cell(0, 7, f"R$ {valor:.2f}".replace('.', ','), 0, 1, 'R') # Valor formatado como string
 
     pdf.set_font(font_for_text, 'B', 10)
-    pdf.cell(100, 7, "Total Receitas".encode('latin1', 'replace').decode('latin1'), 0, 0, 'L')
-    pdf.cell(0, 7, f"R$ {total_receitas:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
+    # Passa a string diretamente para cell
+    pdf.cell(100, 7, "Total Receitas", 0, 0, 'L')
+    pdf.cell(0, 7, f"R$ {total_receitas:.2f}".replace('.', ','), 0, 1, 'R') # Valor formatado como string
     pdf.ln(10)
 
     # --- Adicionar Despesas ao PDF ---
     pdf.set_font(font_for_text, 'B', 12)
-    pdf.cell(0, 10, "Despesas".encode('latin1', 'replace').decode('latin1'), 0, 1, 'L')
+    # Passa a string diretamente para cell
+    pdf.cell(0, 10, "Despesas", 0, 1, 'L')
     pdf.ln(2)
 
     pdf.set_font(font_for_text, '', 10)
     for categoria in sorted(despesas_por_categoria.keys()):
         valor = despesas_por_categoria[categoria]
-        pdf.cell(100, 7, f"- {categoria}".encode('latin1', 'replace').decode('latin1'), 0, 0, 'L')
-        pdf.cell(0, 7, f"R$ {valor:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
+        # Passa as strings diretamente para cell
+        pdf.cell(100, 7, f"- {categoria}", 0, 0, 'L')
+        pdf.cell(0, 7, f"R$ {valor:.2f}".replace('.', ','), 0, 1, 'R') # Valor formatado como string
 
     pdf.set_font(font_for_text, 'B', 10)
-    pdf.cell(100, 7, "Total Despesas".encode('latin1', 'replace').replace('.', ',').decode('latin1'), 0, 0, 'L')
-    pdf.cell(0, 7, f"R$ {total_despesas:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
+    # Passa a string diretamente para cell
+    pdf.cell(100, 7, "Total Despesas", 0, 0, 'L')
+    pdf.cell(0, 7, f"R$ {total_despesas:.2f}".replace('.', ','), 0, 1, 'R') # Valor formatado como string
     pdf.ln(10)
 
     # --- Adicionar Resultado Líquido ---
@@ -469,24 +475,21 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list):
     else:
         pdf.set_text_color(255, 0, 0) # Vermelho para prejuízo
 
-    pdf.cell(100, 10, "Resultado Líquido".encode('latin1', 'replace').decode('latin1'), 0, 0, 'L')
-    pdf.cell(0, 10, f"R$ {resultado_liquido:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
+    # Passa a string diretamente para cell
+    pdf.cell(100, 10, "Resultado Líquido", 0, 0, 'L')
+    pdf.cell(0, 10, f"R$ {resultado_liquido:.2f}".replace('.', ','), 0, 1, 'R') # Valor formatado como string
 
     pdf.set_text_color(0, 0, 0)
 
     pdf_output = pdf.output(dest='S') # Deve retornar bytes
 
-    # --- CORREÇÃO START ---
     # Garante que a saída é bytes antes de criar BytesIO
     if isinstance(pdf_output, str):
-        # Codifica a string para bytes usando 'latin-1', que geralmente funciona bem com PDF
         pdf_output_bytes = pdf_output.encode('latin-1')
     else:
-        # Se já for bytes, usa diretamente
         pdf_output_bytes = pdf_output
 
     return io.BytesIO(pdf_output_bytes)
-    # --- CORREÇÃO END ---
 
 
 def exibir_lancamentos():
