@@ -127,6 +127,13 @@ if 'editar_usuario_index' not in st.session_state:
 if 'editar_usuario_data' not in st.session_state:
      st.session_state['editar_usuario_data'] = None
 
+# Adicionadas variáveis de estado para gerenciar ações solicitadas e confirmação
+if 'edit_requested_index' not in st.session_state:
+    st.session_state['edit_requested_index'] = None
+if 'awaiting_delete_confirmation_index' not in st.session_state:
+     st.session_state['awaiting_delete_confirmation_index'] = None
+
+
 # Carrega os lançamentos ao iniciar o app
 carregar_lancamentos()
 if "lancamentos" not in st.session_state:
@@ -448,7 +455,7 @@ def exportar_lancamentos_para_excel(lancamentos_list):
         st.error(f"Ocorreu um erro ao gerar o arquivo Excel: {e}")
         return None
 
-# Função para exportar lançamentos para PDF (lista detalhada) - CORRIGIDA
+# Função para exportar lançamentos para PDF (lista detalhada) - CORRIGIDA NA VERSÃO ANTERIOR
 def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -506,11 +513,11 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
 
         pdf.ln()
 
-    # --- CORREÇÃO AQUI: Codificar a saída para bytes ---
+    # --- CORREÇÃO ANTERIOR: Codificar a saída para bytes ---
     pdf_output = pdf.output(dest='S').encode('latin-1')
     return io.BytesIO(pdf_output)
 
-# --- FUNÇÃO para gerar a Demonstração de Resultados em PDF - CORRIGIDA ---
+# --- FUNÇÃO para gerar a Demonstração de Resultados em PDF - CORRIGIDA NA VERSÃO ANTERIOR ---
 def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário"):
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -613,13 +620,63 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     pdf.set_text_color(0, 0, 0)
 
     # Finaliza o PDF e retorna como BytesIO
-    # --- CORREÇÃO AQUI: Codificar a saída para bytes ---
+    # --- CORREÇÃO ANTERIOR: Codificar a saída para bytes ---
     pdf_output = pdf.output(dest='S').encode('latin-1')
     return io.BytesIO(pdf_output)
 
 
+# --- FUNÇÃO DE EXIBIÇÃO DE LANÇAMENTOS CORRIGIDA ---
 def exibir_lancamentos():
     st.subheader("Lançamentos")
+
+    # --- Processar ações solicitadas antes de renderizar ---
+    # Processar solicitação de edição
+    if st.session_state.get('edit_requested_index') is not None:
+        index_to_edit = st.session_state['edit_requested_index']
+        # Verifica se o índice ainda é válido
+        if 0 <= index_to_edit < len(st.session_state.get('lancamentos', [])):
+            st.session_state['editar_indice'] = index_to_edit
+            st.session_state['editar_lancamento'] = st.session_state["lancamentos"][index_to_edit]
+            st.session_state['show_edit_modal'] = True
+        else:
+            st.error("Erro: Lançamento a ser editado não encontrado.")
+        st.session_state['edit_requested_index'] = None # Reseta a solicitação
+        st.rerun() # Rerun para mostrar o modal de edição
+
+
+    # Processar confirmação de exclusão
+    if st.session_state.get('awaiting_delete_confirmation_index') is not None:
+        index_to_confirm_delete = st.session_state['awaiting_delete_confirmation_index']
+        # Exibe a mensagem e botões de confirmação em um contêiner separado para melhor controle
+        with st.container():
+             st.warning(f"Confirmar exclusão do lançamento (Índice: {index_to_confirm_delete})?")
+             col_confirm_del, col_cancel_del = st.columns([1, 1])
+             with col_confirm_del:
+                 # Adicionado key="confirm_delete_button" para evitar conflitos
+                 if st.button("Sim, Excluir", key="confirm_delete_button", kind="secondary"):
+                     # Verifica se o índice ainda é válido antes de excluir
+                     if 0 <= index_to_confirm_delete < len(st.session_state.get("lancamentos", [])):
+                        del st.session_state["lancamentos"][index_to_confirm_delete]
+                        salvar_lancamentos()
+                        st.success("Lançamento excluído com sucesso!")
+                     else:
+                        st.error("Erro: Lançamento a ser excluído não encontrado.")
+                     st.session_state['awaiting_delete_confirmation_index'] = None # Reseta a confirmação
+                     st.rerun() # Rerun após exclusão
+
+             with col_cancel_del:
+                 # Adicionado key="cancel_delete_button" para evitar conflitos
+                 if st.button("Cancelar", key="cancel_delete_button"):
+                    st.session_state['awaiting_delete_confirmation_index'] = None # Reseta a confirmação
+                    st.info("Exclusão cancelada.")
+                    st.rerun() # Rerun após cancelamento
+
+        # Se estiver aguardando confirmação, não continue a renderizar a tabela e botões de ação normais por enquanto
+        # O rerun acima cuidará de re-renderizar a página no estado correto.
+        return # Sai da função para esperar a confirmação/cancelamento
+
+
+    # --- Continua renderização normal se nenhuma ação estiver pendente ---
 
     # Define a variável antes dos blocos if/else e inicializa como lista vazia
     lancamentos_para_exibir = []
@@ -772,34 +829,44 @@ def exibir_lancamentos():
         # Adicionar botões de ação abaixo da tabela, referenciando a linha correta
         for index, row in df_exibicao.iterrows():
             # Usamos o índice original da lista filtrada/ordenada para editar/excluir
-            original_index = st.session_state.get("lancamentos", []).index(lancamentos_para_exibir[index])
+            # É crucial obter o índice correto na lista original 'st.session_state["lancamentos"]'
+            # O row.to_dict() cria um dicionário com os dados da linha atual.
+            # Procuramos este dicionário (ignorando a coluna 'Ações' temporariamente) na lista original.
+            # Criamos uma versão da linha sem a coluna 'Ações' para a comparação.
+            row_data_for_lookup = row.drop('Ações').to_dict()
 
-            col1, col2, col3, col4, col5, col6 = st.columns([2,2,2,2,2,2]) # Colunas para alinhar os botões
+            # Encontra o índice na lista original comparando os dicionários de dados
+            # Usamos next() com um default para evitar StopIteration se não encontrar (não deveria acontecer se a lógica estiver correta)
+            try:
+                original_index = next(
+                    i for i, lancamento in enumerate(st.session_state.get("lancamentos", []))
+                    # Compara os dados relevantes, excluindo 'user_email' se necessário para a comparação
+                    if {k: v for k, v in lancamento.items() if k != 'user_email'} == row_data_for_lookup
+                )
+            except StopIteration:
+                st.error(f"Erro interno: Não foi possível encontrar o índice original para o lançamento na linha {index}.")
+                original_index = -1 # Define um índice inválido para evitar ações acidentais
 
-            with col1:
-                # Botão Editar
-                if st.button("✏️ Editar", key=f"edit_lancamento_{original_index}"):
-                    st.session_state['editar_indice'] = original_index
-                    st.session_state['editar_lancamento'] = st.session_state["lancamentos"][original_index]
-                    st.session_state['show_edit_modal'] = True
-                    st.rerun()
-            with col2:
-                # Botão Excluir
-                # Adicionado kind="secondary" para aplicar o estilo CSS de exclusão
-                if st.button("🗑️ Excluir", key=f"delete_lancamento_{original_index}", kind="secondary"):
-                    # Confirmação antes de excluir (opcional, mas recomendado)
-                    if st.session_state.get('confirm_delete_lancamento_index') == original_index:
-                        # Se já pediu confirmação para este item, exclui
-                        del st.session_state["lancamentos"][original_index]
-                        salvar_lancamentos()
-                        st.success("Lançamento excluído com sucesso!")
-                        st.session_state['confirm_delete_lancamento_index'] = None # Reseta a confirmação
-                        st.rerun()
-                    else:
-                        # Primeira vez clicando, pede confirmação
-                        st.session_state['confirm_delete_lancamento_index'] = original_index
-                        st.warning("Clique novamente em 'Excluir' para confirmar.")
-                        # Não faz rerun aqui, espera o segundo clique
+
+            if original_index != -1: # Só exibe os botões se o índice original foi encontrado
+                col1, col2, col3 = st.columns([1, 1, 8]) # Colunas para alinhar os botões (reduzidas para 3 para simplificar)
+
+                with col1:
+                    # Botão Editar - Usa on_click para definir o estado de solicitação de edição
+                    st.button(
+                        "✏️ Editar",
+                        key=f"edit_lancamento_{original_index}",
+                        on_click=lambda idx=original_index: st.session_state.update(edit_requested_index=idx)
+                    )
+                with col2:
+                    # Botão Excluir - Usa on_click para definir o estado de espera por confirmação
+                    st.button(
+                        "🗑️ Excluir",
+                        key=f"delete_lancamento_{original_index}",
+                        kind="secondary",
+                        on_click=lambda idx=original_index: st.session_state.update(awaiting_delete_confirmation_index=idx)
+                    )
+                # A terceira coluna ([8]) permanece vazia para ocupar espaço
 
 
 def pagina_cadastro():
@@ -887,8 +954,11 @@ def pagina_cadastro():
                  with col1:
                     # Botão Excluir para cada usuário
                     # Adicionado kind="secondary" para aplicar o estilo CSS de exclusão
+                    # Adapte a lógica de exclusão de usuário se precisar de confirmação também
                     if st.button("🗑️ Excluir", key=f"delete_usuario_{index}", kind="secondary"):
                          # Confirmação antes de excluir (opcional, mas recomendado)
+                         # Nota: A lógica de confirmação de usuário aqui é a original e pode ser adaptada
+                         # para o novo padrão de estado se desejar uma experiência consistente.
                          if st.session_state.get('confirm_delete_usuario_index') == index:
                              # Se já pediu confirmação para este item, exclui
                              excluir_usuario(index)
@@ -897,7 +967,7 @@ def pagina_cadastro():
                          else:
                              # Primeira vez clicando, pede confirmação
                              st.session_state['confirm_delete_usuario_index'] = index
-                             st.warning("Clique novamente em 'Excluir' para confirmar.")
+                             st.warning(f"Clique novamente em 'Excluir' para confirmar a exclusão de {row['Nome']}.")
                              # Não faz rerun aqui, espera o segundo clique
 
 
