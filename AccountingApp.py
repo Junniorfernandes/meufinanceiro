@@ -154,8 +154,7 @@ def excluir_usuario(index):
 
 
 def pagina_login():
-    st.title("Junior Fernandes 
-    Acesse seu Financeiro")
+    st.title("Junior Fernandes Acesse seu Financeiro")
     email = st.text_input("E-mail")
     senha = st.text_input("Senha", type="password")
     login_button = st.button("Entrar")
