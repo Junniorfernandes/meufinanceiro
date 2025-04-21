@@ -5,8 +5,6 @@ import os
 import pandas as pd
 import io
 from fpdf import FPDF
-# Import necessary components from streamlit-aggrid
-from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode, DataReturnMode, JsCode
 
 # --- Estilo CSS para os botões de navegação ---
 st.markdown(
@@ -627,13 +625,12 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     return io.BytesIO(pdf_output)
 
 
-# --- FUNÇÃO DE EXIBIÇÃO DE LANÇAMENTOS REFATORADA PARA USAR STREAMLIT-AGGRID ---
+# --- FUNÇÃO DE EXIBIÇÃO DE LANÇAMENTOS MODIFICADA PARA TENTAR ALINHAR BOTÕES ---
 def exibir_lancamentos():
     st.subheader("Lançamentos")
 
     # --- Processar ações solicitadas antes de renderizar ---
-    # A lógica de processamento das ações (editar/excluir) que atualiza o session_state
-    # continua aqui. A AgGrid na próxima execução lerá essas atualizações.
+    # Processar solicitação de edição
     if st.session_state.get('edit_requested_index') is not None:
         index_to_edit = st.session_state['edit_requested_index']
         # Verifica se o índice ainda é válido
@@ -647,15 +644,19 @@ def exibir_lancamentos():
         st.rerun() # Rerun para mostrar o modal de edição
 
 
-    # Processar confirmação de exclusão (mantida a lógica de confirmação separada por simplicidade)
+    # Processar confirmação de exclusão
     if st.session_state.get('awaiting_delete_confirmation_index') is not None:
         index_to_confirm_delete = st.session_state['awaiting_delete_confirmation_index']
-        # Exibe a mensagem e botões de confirmação em um contêiner separado
+        # Exibe a mensagem e botões de confirmação em um contêiner separado para melhor controle
         with st.container():
+             # Removido 'Índice na lista original' da mensagem para simplificar a UI
              st.warning(f"Confirmar exclusão deste lançamento?")
              col_confirm_del, col_cancel_del = st.columns([1, 1])
              with col_confirm_del:
+                 # Adicionado key="confirm_delete_button" para evitar conflitos
+                 # Removido kind="secondary" para compatibilidade com versões antigas do Streamlit
                  if st.button("Sim, Excluir", key="confirm_delete_button"):
+                     # Verifica se o índice ainda é válido antes de excluir
                      if 0 <= index_to_confirm_delete < len(st.session_state.get("lancamentos", [])):
                         del st.session_state["lancamentos"][index_to_confirm_delete]
                         salvar_lancamentos()
@@ -666,69 +667,37 @@ def exibir_lancamentos():
                      st.rerun() # Rerun após exclusão
 
              with col_cancel_del:
+                 # Adicionado key="cancel_delete_button" para evitar conflitos
                  if st.button("Cancelar", key="cancel_delete_button"):
                     st.session_state['awaiting_delete_confirmation_index'] = None # Reseta a confirmação
                     st.info("Exclusão cancelada.")
                     st.rerun() # Rerun após cancelamento
 
-        # Se estiver aguardando confirmação, sai para esperar a interação do usuário
-        return
+        # Se estiver aguardando confirmação, não continue a renderizar a tabela e botões de ação normais por enquanto
+        # O rerun acima cuidará de re-renderizar a página no estado correto.
+        return # Sai da função para esperar a confirmação/cancelamento
 
 
-    # --- Prepara os dados para exibição em AgGrid, incluindo o índice original e HTML para botões ---
-    lancamentos_para_aggrid = []
+    # --- Prepara os dados para exibição, incluindo o índice original ---
+    lancamentos_para_exibir_com_indice = []
     usuario_email = st.session_state.get('usuario_atual_email')
 
-    # Filtra e ordena a lista original primeiro
-    if st.session_state.get('tipo_usuario_atual') == 'Administrador':
-         lancamentos_filtered_sorted = sorted(st.session_state.get("lancamentos", []), key=lambda x: datetime.strptime(x.get('Data', '1900-01-01'), '%Y-%m-%d'), reverse=True)
-    else:
-         lancamentos_filtered_sorted = sorted([
-             l for l in st.session_state.get("lancamentos", [])
-             if l.get('user_email') == usuario_email
-         ], key=lambda x: datetime.strptime(x.get('Data', '1900-01-01'), '%Y-%m-%d'), reverse=True)
+    # Filtra e armazena o índice original junto com os dados
+    # A lista principal st.session_state["lancamentos"] é a fonte da verdade e mantém a ordem original (de adição)
+    # Iteramos sobre ela para encontrar os lançamentos relevantes e guardar seus índices originais.
+    for i, lancamento in enumerate(st.session_state.get("lancamentos", [])):
+        if st.session_state.get('tipo_usuario_atual') == 'Administrador':
+             # Admin vê todos, guarda o índice original
+             lancamento_copy = lancamento.copy()
+             lancamento_copy['_original_index'] = i # Adiciona o índice original
+             lancamentos_para_exibir_com_indice.append(lancamento_copy)
+        elif lancamento.get('user_email') == usuario_email:
+            # Cliente vê apenas os seus, guarda o índice original
+            lancamento_copy = lancamento.copy()
+            lancamento_copy['_original_index'] = i # Adiciona o índice original
+            lancamentos_para_exibir_com_indice.append(lancamento_copy)
 
 
-    # Agora itera sobre a lista filtrada e ordenada para preparar os dados para AgGrid
-    for lancamento in lancamentos_filtered_sorted:
-         # Encontra o índice original deste lançamento na lista global (sem filtro/ordem)
-         # Isso é importante para que as ações de editar/excluir modifiquem o item correto na lista original
-         try:
-             original_index = st.session_state.get("lancamentos", []).index(lancamento)
-         except ValueError:
-             # Isso não deveria acontecer se a lógica estiver correta, mas é um fallback
-             st.warning(f"Erro interno: Não foi possível encontrar o índice original para um lançamento.")
-             continue # Pula este lançamento se não encontrar o índice original
-
-
-         lancamento_copy = lancamento.copy()
-         lancamento_copy['_original_index'] = original_index # Adiciona o índice original para uso interno
-
-
-         # Formatar data e valor para exibição (AgGrid pode formatar, mas formatar antes garante consistência)
-         try:
-             data_formatada = datetime.strptime(lancamento_copy.get("Data", '1900-01-01'), "%Y-%m-%d").strftime("%d/%m/%Y")
-             lancamento_copy['Data'] = data_formatada
-         except ValueError:
-             lancamento_copy['Data'] = lancamento_copy.get("Data", "Data Inválida")
-
-         try:
-              lancamento_copy['Valor'] = f"R$ {lancamento_copy.get('Valor', 0.0):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-         except Exception:
-              lancamento_copy['Valor'] = lancamento_copy.get('Valor', 0.0)
-
-
-         # --- CRIA HTML PARA OS BOTÕES DENTRO DA CÉLULA DE AÇÕES ---
-         # Inclui o índice original em um atributo data para ser capturado pelo JavaScript/AgGrid events
-         # Adicionados IDs para facilitar a identificação via JavaScript, se necessário
-         edit_button_html = f'<button id="edit-btn-{original_index}" class="btn-action btn-edit" data-original-index="{original_index}" style="margin-right: 5px; cursor: pointer;">✏️ Editar</button>'
-         delete_button_html = f'<button id="delete-btn-{original_index}" class="btn-action btn-delete" data-original-index="{original_index}" style="cursor: pointer;">🗑️ Excluir</button>'
-         lancamento_copy['Ações'] = f"{edit_button_html}{delete_button_html}"
-
-
-         lancamentos_para_aggrid.append(lancamento_copy)
-
-    # --- Botões de Exportação (mantidos antes da tabela) ---
     if st.session_state.get('tipo_usuario_atual') == 'Administrador':
         filename_suffix = "admin"
         usuario_para_pdf_title = "Todos os Lançamentos"
@@ -736,17 +705,18 @@ def exibir_lancamentos():
         filename_suffix = st.session_state.get('usuario_atual_nome', 'usuario').replace(" ", "_").lower()
         usuario_para_pdf_title = st.session_state.get('usuario_atual_nome', 'Usuário')
 
-    # As funções de exportação esperam apenas a lista de dicionários de lançamento original (sem _original_index e HTML)
-    # Vamos gerar esta lista a partir de lancamentos_filtered_sorted
-    lancamentos_para_exportar = [ {k: v for k, v in item.items() if k not in ['_original_index']} for item in lancamentos_filtered_sorted ] # Remove _original_index
 
+    # A lista lancamentos_para_exibir_com_indice agora contém os dados filtrados/selecionados com o índice original.
+    # Usaremos esta lista para a exibição da tabela e botões de exportação.
 
-    if not lancamentos_para_exportar:
+    if not lancamentos_para_exibir_com_indice:
         st.info("Nenhum lançamento encontrado para este usuário.")
-        # Exibe botões de exportação vazios
+        # As funções de exportação esperam apenas a lista de dicionários de lançamento, sem o _original_index
+        lancamentos_para_exportar = [] # Lista vazia para exportação
+
         col_excel, col_pdf_lista, col_pdf_dr = st.columns([1, 1, 1])
         with col_excel:
-             excel_buffer = exportar_lancamentos_para_excel([]) # Passa lista vazia
+             excel_buffer = exportar_lancamentos_para_excel(lancamentos_para_exportar) # Passa lista vazia
              if excel_buffer:
                 st.download_button(
                     label="📥 Exportar para Excel (Vazio)",
@@ -755,7 +725,8 @@ def exibir_lancamentos():
                     mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
         with col_pdf_lista:
-             pdf_lista_buffer = exportar_lancamentos_para_pdf([], usuario_para_pdf_title)
+             # Use a sua função original para exportar a lista vazia
+             pdf_lista_buffer = exportar_lancamentos_para_pdf(lancamentos_para_exportar, usuario_para_pdf_title)
              st.download_button(
                 label="📄 Exportar Lista PDF (Vazia)",
                 data=pdf_lista_buffer,
@@ -763,7 +734,8 @@ def exibir_lancamentos():
                 mime='application/pdf'
              )
         with col_pdf_dr:
-             pdf_dr_buffer = gerar_demonstracao_resultados_pdf([], usuario_para_pdf_title)
+             # Use a nova função para exportar a DR vazia
+             pdf_dr_buffer = gerar_demonstracao_resultados_pdf(lancamentos_para_exportar, usuario_para_pdf_title)
              st.download_button(
                 label="📊 Exportar DR PDF (Vazia)",
                 data=pdf_dr_buffer,
@@ -771,238 +743,136 @@ def exibir_lancamentos():
                 mime='application/pdf'
              )
         st.markdown("---")
-        return # Sai se não há lançamentos
+        return # Sai da função para não exibir a tabela vazia
 
-    # Exibe botões de exportação com dados
-    col_excel, col_pdf_lista, col_pdf_dr = st.columns([1, 1, 1])
+
+    # Ordenar lançamentos por data (do mais recente para o mais antigo)
+    # Agora ordenamos a lista que já contém o índice original
+    try:
+        # Usamos a lista que já foi filtrada/selecionada corretamente e contém o índice original
+        lancamentos_para_exibir_com_indice.sort(key=lambda x: datetime.strptime(x.get('Data', '1900-01-01'), '%Y-%m-%d'), reverse=True)
+    except ValueError:
+        st.warning("Não foi possível ordenar os lançamentos por data devido a formato inválido.")
+
+    # --- Botões de Exportação ---
+    # As funções de exportação esperam apenas a lista de dicionários de lançamento, sem o _original_index
+    lancamentos_para_exportar = [ {k: v for k, v in item.items() if k != '_original_index'} for item in lancamentos_para_exibir_com_indice ]
+
+    col_excel, col_pdf_lista, col_pdf_dr = st.columns([1, 1, 1]) # Mantendo 3 colunas para os botões de exportação
+
     with col_excel:
         excel_buffer = exportar_lancamentos_para_excel(lancamentos_para_exportar)
-        if excel_buffer:
+        if excel_buffer: # Só exibe o botão se a geração do Excel for bem-sucedida
             st.download_button(
                 label="📥 Exportar Lançamentos em Excel",
                 data=excel_buffer,
                 file_name=f'lancamentos_{filename_suffix}_{datetime.now().strftime("%Y%m%d")}.xlsx',
                 mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
+
     with col_pdf_lista:
+         # Botão para a sua função original de exportação (lista detalhada)
          pdf_lista_buffer = exportar_lancamentos_para_pdf(lancamentos_para_exportar, usuario_para_pdf_title)
          st.download_button(
-            label="📄 Exportar Lançamentos em PDF",
+            label="📄 Exportar Lançamentos em PDF", # Alterado o label
             data=pdf_lista_buffer,
             file_name=f'lista_lancamentos_{filename_suffix}_{datetime.now().strftime("%Y%m%d")}.pdf',
             mime='application/pdf'
          )
     with col_pdf_dr:
+         # Botão para a nova função de exportação da Demonstração de Resultados
          pdf_dr_buffer = gerar_demonstracao_resultados_pdf(lancamentos_para_exportar, usuario_para_pdf_title)
          st.download_button(
-            label="📊 Exportar DR em PDF",
+            label="📊 Exportar DR em PDF", # Alterado o label
             data=pdf_dr_buffer,
             file_name=f'demonstracao_resultados_{filename_suffix}_{datetime.now().strftime("%Y%m%d")}.pdf',
             mime='application/pdf'
          )
-    st.markdown("---")
-
-    # --- Cria DataFrame para AgGrid ---
-    df_aggrid = pd.DataFrame(lancamentos_para_aggrid)
 
 
-    # --- Configurações da AgGrid ---
-    go = GridOptionsBuilder.from_dataframe(df_aggrid)
+    st.markdown("---") # Adiciona uma linha divisória após os botões de exportação
 
-    # Configura a coluna 'Ações' para renderizar HTML e permitir cliques
-    # Usamos um cellRenderer que interpreta HTML.
-    # É crucial ter 'allow_unsafe_jscode=True' no AgGrid para isso.
-    # Também adicionamos um JsCode para capturar cliques nos botões dentro da célula.
-    cell_renderer_jscode = JsCode("""
-    class ActionButtonRenderer {
-        init(params) {
-            this.eGui = document.createElement('div');
-            this.eGui.innerHTML = params.value; // Renderiza o HTML
+    # --- Exibição da Tabela de Lançamentos ---
 
-            // Adiciona listeners de evento para os botões
-            const editButton = this.eGui.querySelector('.btn-edit');
-            if (editButton) {
-                editButton.addEventListener('click', () => {
-                    // Envia uma mensagem de volta para Streamlit com o índice original
-                    const originalIndex = editButton.getAttribute('data-original-index');
-                    Streamlit.setComponentValue({ action: 'edit', index: originalIndex });
-                });
-            }
+    # Cria um DataFrame para exibir os dados, que já incluem o _original_index
+    df_exibicao = pd.DataFrame(lancamentos_para_exibir_com_indice)
 
-            const deleteButton = this.eGui.querySelector('.btn-delete');
-            if (deleteButton) {
-                deleteButton.addEventListener('click', () => {
-                     // Envia uma mensagem de volta para Streamlit com o índice original
-                    const originalIndex = deleteButton.getAttribute('data-original-index');
-                    Streamlit.setComponentValue({ action: 'delete', index: originalIndex });
-                });
-            }
-        }
-        getGui() {
-            return this.eGui;
-        }
-    }
-    """)._js_code # Acessa o código JS puro
+    if not df_exibicao.empty:
+        # Formatar a coluna 'Data' para DD/MM/AAAA para exibição
+        if 'Data' in df_exibicao.columns:
+            try:
+                # Converter para datetime, lidando com possíveis erros, e formatar
+                df_exibicao['Data'] = pd.to_datetime(df_exibicao['Data'], errors='coerce').dt.strftime('%d/%m/%Y')
+                # Substituir NaT por uma string vazia ou placeholder se a conversão falhar
+                df_exibicao['Data'] = df_exibicao['Data'].fillna('Data Inválida')
+            except Exception as e:
+                st.warning(f"Erro ao formatar a coluna 'Data' para exibição: {e}")
 
-    go.configure_column(
-        'Ações',
-        cellRenderer=cell_renderer_jscode, # Usa o renderizador JS personalizado
-        autoHeight=True, # Ajusta altura da linha
-        editable=False, # Não permite editar o HTML diretamente na célula
-        filterable=False, # Remove filtro na coluna de ações
-        sortable=False, # Remove ordenação na coluna de ações
-        width=100 # Ajusta largura da coluna de ações (pode precisar de ajuste visual)
-    )
-
-    # Configura outras colunas com tipos para melhor filtragem e ordenação pela AgGrid
-    go.configure_column('Data', type=['dateColumnFilter', 'customDateTimeFormat'], custom_format_string='dd/MM/yyyy', sortingOrder=['desc', 'asc'])
-    go.configure_column('Valor', type=['numericColumn', 'numberColumnFilter'], valueFormatter='(data.Valor != null) ? "R$ " + data.Valor.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ""') # Formata valor na exibição da AgGrid
-    go.configure_column('Descrição', filter=True) # Permite filtro por texto
-    go.configure_column('Categorias', filter=True)
-    go.configure_column('Tipo de Lançamento', filter=True)
+        # Formatar a coluna 'Valor' como moeda R$ X.XXX,XX para exibição
+        if 'Valor' in df_exibicao.columns:
+            try:
+                 df_exibicao['Valor'] = df_exibicao['Valor'].apply(lambda x: f"R$ {x:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
+            except Exception as e:
+                st.warning(f"Erro ao formatar a coluna 'Valor' para exibição: {e}")
 
 
-    # Esconde a coluna temporária do índice original
-    go.configure_column('_original_index', hide=True)
-    if 'user_email' in df_aggrid.columns:
-         go.configure_column('user_email', hide=True)
+        # Remover a coluna 'user_email' para exibição na tabela
+        if 'user_email' in df_exibicao.columns:
+            df_exibicao = df_exibicao.drop(columns=['user_email'])
 
 
-    #go.configure_selection('single', use_checkbox=False) # Desabilitado seleção de linha padrão para focar nos botões
-
-    # Adiciona funcionalidade de "Full Row Action" se quiser capturar cliques na linha inteira
-    # go.configure_grid_options(rowClicked=JsCode("""
-    # function(params) {
-    #     Streamlit.setComponentValue({ action: 'row_click', data: params.data });
-    # }
-    # """)._js_code)
+        # Adiciona coluna placeholder para as ações
+        df_exibicao['Ações'] = ""
 
 
-    gridOptions = go.build()
+        # Exibe a tabela, escondendo a coluna temporária '_original_index'
+        st.dataframe(
+            df_exibicao,
+            column_config={
+                "Data": st.column_config.Column(width="small"),
+                "Descrição": st.column_config.Column(width="medium"),
+                "Categoria": st.column_config.Column(width="small"),
+                "Tipo de Lançamento": st.column_config.Column(width="small"),
+                "Valor": st.column_config.Column(width="small"),
+                "Ações": st.column_config.Column(width="medium"), # Ajustando a largura para os botões
+                "_original_index": None # ESCONDE a coluna temporária do índice original
+            },
+            hide_index=True,
+            use_container_width=True
+        )
 
-    # --- Exibe a tabela AgGrid e captura eventos ---
-    # É aqui que a tabela interativa é renderizada
-    grid_response = AgGrid(
-        df_aggrid,
-        gridOptions=gridOptions,
-        data_return_mode=DataReturnMode.AS_INPUT, # Retorna os dados modificados na mesma estrutura
-        update_mode=GridUpdateMode.MODEL_CHANGED, # Atualiza o estado da grid em mudanças no modelo
-        fit_columns_on_grid_load=True, # Tenta ajustar colunas na carga
-        allow_unsafe_jscode=True, # **CRUCIAL** para o JavaScript no cellRenderer funcionar
-        enable_enterprise_modules=False, # Use False a menos que tenha licença
-        height=350, # Altura da tabela
-        width='100%', # Largura da tabela
-        reload_data=True # Recarrega dados no rerun do Streamlit
-    )
+        # --- ADICIONAR BOTÕES DE AÇÃO ALINHADOS COM A COLUNA 'AÇÕES' ---
+        # Cria um contêiner para os botões de ação de cada linha
+        button_container = st.container()
 
-    # --- Captura e processa eventos enviados pelo JavaScript dos botões ---
-    # A AgGrid envia o valor setado por Streamlit.setComponentValue() para grid_response['data']
-    # Mas isso é mais usado para dados da célula. Para eventos de botão, podemos usar
-    # o atributo 'onCellClicked' nas gridOptions ou o retorno de Streamlit.setComponentValue
-    # A forma como o JsCode foi escrito envia o evento para Streamlit.setComponentValue.
-    # Precisamos verificar se grid_response['data'] contém a estrutura que enviamos ({ action: ..., index: ... })
+        # Usa colunas para tentar alinhar com as colunas da tabela
+        # O número de colunas criadas deve ser igual ao número de colunas visíveis na tabela (6 neste caso)
+        # As larguras podem precisar de ajuste manual para melhor alinhamento visual
+        col_widths = [55, 190, 110, 90, 80, 100] # Estimativa de larguras para 6 colunas
 
-    # Nota: Capturar eventos de clique de botões HTML customizados dentro da AgGrid e passá-los
-    # de volta para o Streamlit é uma das partes mais complexas.
-    # O código JavaScript acima tenta enviar o índice original e a ação via setComponentValue.
-    # Streamlit captura isso, mas a forma exata de recuperar no Python pode variar.
+        for index, row in df_exibicao.iterrows():
+            original_index = row['_original_index']
 
-    # Uma abordagem comum é ter um listener JS que atualiza um campo específico na linha
-    # que Streamlit está 'observando', ou usar `Streamlit.setComponentValue` e tentar ler
-    # o valor retornado no grid_response. O AgGrid Component é um pouco complexo para
-    # capturar eventos de botões arbitrários dentro de células HTML customizadas diretamente.
+            # Cria as colunas para esta linha de botões
+            cols = button_container.columns(col_widths) # Use as larguras estimadas
 
-    # O código JS acima usa `Streamlit.setComponentValue`. Vamos tentar ler o que ele retorna.
-    # A documentação da AgGrid sugere que setComponentValue atualiza o valor do componente,
-    # que Streamlit pode ler no retorno de AgGrid().
+            # Coloca os botões nas colunas correspondentes à coluna 'Ações' (última coluna)
+            # Precisamos de sub-colunas dentro da última coluna para colocar 2 botões lado a lado
+            with cols[-1]: # Acessa a última coluna
+                 col_edit, col_delete = st.columns(2) # Cria 2 sub-colunas dentro da última coluna
 
-    # Vamos verificar se há uma ação pendente baseada no retorno da AgGrid
-    # Se o cellRenderer estiver funcionando e enviando o valor, ele pode aparecer aqui.
-    # No entanto, AgGrid().data_return_mode='AS_INPUT' retorna os dados da grid.
-    # Precisamos de uma forma de capturar o evento, não os dados.
-
-    # Uma alternativa mais confiável para capturar cliques em botões dentro da AgGrid
-    # é usar o parâmetro `enable_async_events=True` no `AgGrid` e o evento `cellClicked`,
-    # e então verificar qual célula foi clicada.
-
-    # Vamos tentar capturar o evento cellClicked da AgGrid
-    # Isso requer habilitar enable_async_events=True e ter um JsCode listener para cellClicked
-    # que envia a informação relevante de volta.
-
-    # --- Lógica para capturar eventos de clique nas células da AgGrid ---
-    # A AgGrid retorna um dicionário com o estado atual e eventos.
-    # Eventos como cellClicked são acionados se enable_async_events=True.
-    # A estrutura do evento retornado precisa ser verificada.
-
-    # Com o JsCode no cellRenderer usando Streamlit.setComponentValue, o valor pode ser
-    # associado à célula ou linha clicada no retorno da AgGrid.
-    # Vamos inspecionar o grid_response para ver se há dados de evento.
-
-    # st.write(grid_response) # Descomente para inspecionar a resposta da AgGrid e entender o que é retornado no clique
-
-    # Vamos tentar verificar se alguma ação foi enviada pelo JavaScript dos botões
-    # A estrutura enviada pelo JS é `{ action: 'edit' | 'delete', index: originalIndex }`
-    # Precisamos encontrar onde essa informação aparece no `grid_response`.
-    # Geralmente, eventos de clique de célula customizados precisam de tratamento específico.
-
-    # Para simplificar (e porque a captura de eventos de botões customizados via AgGrid é complexa),
-    # a melhor forma de integrar com o seu sistema atual é:
-    # 1. Manter a AgGrid para renderizar a tabela com botões visuais HTML.
-    # 2. Continuar usando a lógica de edição/exclusão baseada em st.session_state
-    # 3. Precisamos de um mecanismo para que um clique no botão HTML da AgGrid atualize o st.session_state
-    #    (`edit_requested_index` ou `awaiting_delete_confirmation_index`).
-
-    # A forma mais fácil de fazer isso COM Streamlit.setComponentValue é usar um JsCode
-    # global ou no cellRenderer que envia o valor, e Streamlit.setComponentValue
-    # atualizará o valor do componente AgGrid. A resposta da AgGrid pode conter
-    # o valor enviado.
-
-    # Vamos adicionar um listener de eventos no Python para a resposta da AgGrid.
-    # Se a AgGrid retornar algo na chave 'value' ou similar que corresponda à nossa estrutura { action: ..., index: ...}
-
-    # Captura o valor retornado pelo componente (que pode ser o valor setado pelo Streamlit.setComponentValue no JS)
-    # É importante notar que AgGrid()._component_value é o que Streamlit.setComponentValue no JS atualiza.
-    # No entanto, acessar atributos privados como _component_value não é recomendado.
-    # A forma correta é usar a resposta da AgGrid.
-
-    # Vamos verificar se o grid_response contém a informação da ação clicada
-    # A estrutura do retorno de AgGrid com enable_async_events=True e listeners JS pode variar.
-    # Assumindo que o JsCode envia {action: ..., index: ...}, precisamos encontrar isso no response.
-    # Geralmente, isso aparece em `grid_response['data']` se você modifica os dados,
-    # ou em `grid_response['selected_rows']` se a linha é selecionada,
-    # ou em chaves específicas de evento se `enable_async_events=True` e listeners são usados.
-
-    # Com o JsCode no cellRenderer, o valor setado por Streamlit.setComponentValue
-    # pode aparecer diretamente na resposta da AgGrid.
-    # Vamos tentar verificar se `grid_response` contém as chaves 'action' e 'index'.
-
-    # Verifica se a resposta da AgGrid contém informações de ação (enviadas pelo JS)
-    if grid_response is not None and isinstance(grid_response, dict):
-        # A forma exata como o valor do Streamlit.setComponentValue retorna pode variar dependendo da versão da AgGrid
-        # E como está configurado. Pode estar em 'value', 'data', etc.
-        # Vamos tentar inspecionar algumas chaves comuns ou a resposta completa.
-        # st.write("Grid Response:", grid_response) # Ajuda de debug
-
-        # Se o JsCode setta o valor do COMPONENTE com Streamlit.setComponentValue,
-        # Streamlit pode retornar esse valor diretamente na resposta ou em uma chave padrão.
-        # Vamos tentar verificar se as chaves 'action' e 'index' estão diretamente no dicionário de resposta.
-        # Ou talvez no 'data' ou 'selected_rows' se a linha for considerada "modificada" ou "selecionada".
-
-        # Tentativa de verificar as chaves diretamente no dicionário de resposta
-        if 'action' in grid_response and 'index' in grid_response:
-             action = grid_response['action']
-             index = int(grid_response['index']) # O índice vem como string do JS
-
-             if action == 'edit':
-                 st.session_state['edit_requested_index'] = index
-                 st.rerun()
-             elif action == 'delete':
-                 st.session_state['awaiting_delete_confirmation_index'] = index
-                 st.rerun()
-        # Nota: Esta forma de capturar eventos pode não ser a mais robusta ou oficial.
-        # A forma mais "correta" com AgGrid envolve listeners de eventos e enable_async_events.
-
-    # --- Fim da lógica de exibição e captura de eventos da AgGrid ---
+                 with col_edit:
+                     st.button(
+                         "✏️ Editar",
+                         key=f"edit_lancamento_{original_index}",
+                         on_click=lambda idx=original_index: st.session_state.update(edit_requested_index=idx)
+                     )
+                 with col_delete:
+                     st.button(
+                         "🗑️ Excluir",
+                         key=f"delete_lancamento_{original_index}",
+                         on_click=lambda idx=original_index: st.session_state.update(awaiting_delete_confirmation_index=idx)
+                     )
 
 
 def pagina_cadastro():
@@ -1091,6 +961,7 @@ def pagina_cadastro():
                     # Botão Excluir para cada usuário
                     # Adicionado kind="secondary" para aplicar o estilo CSS de exclusão
                     # Adapte a lógica de exclusão de usuário se precisar de confirmação também
+                    # --- CORREÇÃO ANTERIOR: Removido kind="secondary" do botão de excluir usuário ---
                     if st.button("🗑️ Excluir", key=f"delete_usuario_{index}"):
                          # Confirmação antes de excluir (opcional, mas recomendado)
                          # Nota: A lógica de confirmação de usuário aqui é a original e pode ser adaptada
@@ -1130,7 +1001,7 @@ def pagina_dashboard():
     if st.session_state.get('show_edit_modal'):
          render_edit_lancamento_form()
 
-    # Chama a função exibir_lancamentos (agora usando AgGrid)
+    # Chama a função exibir_lancamentos corrigida
     exibir_lancamentos()
 
 
