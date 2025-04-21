@@ -10,38 +10,54 @@ from fpdf import FPDF # Certifique-se de ter a biblioteca fpdf2 instalada (pip i
 st.markdown(
     """
     <style>
+    /* Estilos gerais para botões */
     div.stButton > button {
-        background-color: #f0f2f6; /* Cor de fundo clara */
-        color: #262730; /* Cor do texto escura */
-        border-radius: 8px; /* Cantos arredondados */
-        border: 1px solid #d4d7de; /* Borda sutil */
-        padding: 8px 16px; /* Espaçamento interno */
-        font-weight: bold; /* Texto em negrito */
-        display: inline-flex; /* Alinha os itens inline */
-        align-items: center; /* Alinha verticalmente o ícone e o texto */
-        justify-content: center; /* Centraliza o conteúdo */
-        gap: 8px; /* Espaço entre o ícone e o texto */
-        width: auto; /* Largura automática para se ajustar ao conteúdo */
+        background-color: #f0f2f6;
+        color: #262730;
+        border-radius: 8px;
+        border: 1px solid #d4d7de;
+        padding: 8px 16px;
+        font-weight: bold;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: auto;
+        margin: 2px; /* Adiciona uma pequena margem para espaçamento visual */
     }
     div.stButton > button:hover {
-        background-color: #d4d7de; /* Cor de fundo ao passar o mouse */
+        background-color: #d4d7de;
         color: #262730;
     }
-    /* Estilo para os botões de exclusão (secondary button) */
+
+    /* Estilo para botões de exclusão (secondary button) */
     div.stButton > button[kind="secondary"] {
-        background-color: #e0f2f7; /* Fundo azul claro (ajustado para Streamlit secondary default) */
-        color: #003548; /* Texto azul escuro */
+        background-color: #e0f2f7; /* Azul claro */
+        color: #003548; /* Texto azul */
         border-color: #b2e2f2; /* Borda azul */
     }
      div.stButton > button[kind="secondary"]:hover {
-        background-color: #b2e2f2; /* Fundo azul ao passar o mouse */
+        background-color: #b2e2f2; /* Azul mais escuro */
         color: #003548;
     }
 
-    /* Adicionado estilo para ajustar o alinhamento vertical do conteúdo nas colunas */
-    /* Isso pode ajudar a alinhar texto e botões se estiverem em colunas na mesma linha */
-    div.st எழுது > div {
-        vertical-align: middle;
+    /* Estilo específico para botões de ícone para tentar melhorar o alinhamento vertical */
+    /* Pode ser necessário ajustar dependendo do Streamlit e navegador */
+     div.stButton > button[data-testid^="stButton"] {
+        line-height: 1; /* Reduz a altura da linha */
+        padding: 4px; /* Reduz o padding para tornar o botão menor */
+        display: flex; /* Usa flexbox para alinhar conteúdo (o ícone) */
+        align-items: center; /* Centraliza verticalmente o ícone dentro do botão */
+        justify-content: center; /* Centraliza horizontalmente o ícone */
+     }
+
+     /* Estilo para o conteúdo dentro das colunas para tentar alinhamento vertical */
+     /* Pode não funcionar perfeitamente em todos os casos, mas ajuda a direcionar */
+    [data-testid^="stColumn"] > div {
+        display: flex;
+        flex-direction: column;
+        justify-content: center; /* Centraliza verticalmente o conteúdo na coluna */
+        height: 100%; /* Faz a div filha preencher a altura do contêiner da coluna */
     }
 
     </style>
@@ -50,7 +66,6 @@ st.markdown(
 )
 
 DATA_FILE = "lancamentos.json"
-# USUARIOS_FILE e CATEGORIAS_FILE removidos
 
 # --- Funções de Carregamento e Salvamento ---
 
@@ -311,7 +326,7 @@ def exportar_lancamentos_para_excel(lancamentos_list):
         st.error(f"Ocorreu um erro ao gerar o arquivo Excel: {e}")
         return None
 
-# Função para exportar lançamentos para PDF (lista detalhada) - Corrigida a passagem de strings
+# Função para exportar lançamentos para PDF (lista detalhada)
 def exportar_lancamentos_para_pdf(lancamentos_list):
     """Exporta a lista detalhada de lançamentos para um arquivo PDF."""
     pdf = FPDF()
@@ -328,7 +343,6 @@ def exportar_lancamentos_para_pdf(lancamentos_list):
 
     pdf.set_font("Arial", 'B', 12)
     report_title = "Relatório Detalhado de Lançamentos"
-    # Passa a string diretamente para cell
     pdf.cell(0, 10, report_title, 0, 1, 'C')
     pdf.ln(10)
 
@@ -337,7 +351,6 @@ def exportar_lancamentos_para_pdf(lancamentos_list):
     headers = ["Data", "Descrição", "Categoria", "Tipo", "Valor"]
 
     for i, header in enumerate(headers):
-        # Passa a string diretamente para cell
         pdf.cell(col_widths[i], 10, header, 1, 0, 'C', fill=False)
     pdf.ln()
 
@@ -353,7 +366,6 @@ def exportar_lancamentos_para_pdf(lancamentos_list):
         tipo = lancamento.get("Tipo de Lançamento", "")
         valor_formatado = f"R$ {lancamento.get('Valor', 0.0):.2f}".replace('.', ',')
 
-        # Passa as strings diretamente para cell
         pdf.cell(col_widths[0], 10, data_formatada, 1, 0, 'C')
         pdf.cell(col_widths[1], 10, descricao, 1, 0, 'L')
         pdf.cell(col_widths[2], 10, categoria if categoria else "", 1, 0, 'C')
@@ -372,7 +384,7 @@ def exportar_lancamentos_para_pdf(lancamentos_list):
     return io.BytesIO(pdf_output_bytes)
 
 
-# --- FUNÇÃO para gerar a Demonstração de Resultados em PDF --- Corrigida a passagem de strings
+# --- FUNÇÃO para gerar a Demonstração de Resultados em PDF ---
 def gerar_demonstracao_resultados_pdf(lancamentos_list):
     """Gera um PDF da Demonstração de Resultados (DRE)."""
     pdf = FPDF()
@@ -390,7 +402,6 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list):
 
     pdf.set_font(font_for_text, 'B', 14)
     report_title = "Demonstração de Resultados"
-    # Passa a string diretamente para cell
     pdf.cell(0, 10, report_title, 0, 1, 'C')
     pdf.ln(10)
 
@@ -418,38 +429,32 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list):
 
     # --- Adicionar Receitas ao PDF ---
     pdf.set_font(font_for_text, 'B', 12)
-    # Passa a string diretamente para cell
     pdf.cell(0, 10, "Receitas", 0, 1, 'L')
     pdf.ln(2)
 
     pdf.set_font(font_for_text, '', 10)
     for categoria in sorted(receitas_por_categoria.keys()):
         valor = receitas_por_categoria[categoria]
-        # Passa as strings diretamente para cell
         pdf.cell(100, 7, f"- {categoria}", 0, 0, 'L')
         pdf.cell(0, 7, f"R$ {valor:.2f}".replace('.', ','), 0, 1, 'R')
 
     pdf.set_font(font_for_text, 'B', 10)
-    # Passa a string diretamente para cell
     pdf.cell(100, 7, "Total Receitas", 0, 0, 'L')
     pdf.cell(0, 7, f"R$ {total_receitas:.2f}".replace('.', ','), 0, 1, 'R')
     pdf.ln(10)
 
     # --- Adicionar Despesas ao PDF ---
     pdf.set_font(font_for_text, 'B', 12)
-    # Passa a string diretamente para cell
     pdf.cell(0, 10, "Despesas", 0, 1, 'L')
     pdf.ln(2)
 
     pdf.set_font(font_for_text, '', 10)
     for categoria in sorted(despesas_por_categoria.keys()):
         valor = despesas_por_categoria[categoria]
-        # Passa as strings diretamente para cell
         pdf.cell(100, 7, f"- {categoria}", 0, 0, 'L')
         pdf.cell(0, 7, f"R$ {valor:.2f}".replace('.', ','), 0, 1, 'R')
 
     pdf.set_font(font_for_text, 'B', 10)
-    # Passa a string diretamente para cell
     pdf.cell(100, 7, "Total Despesas", 0, 0, 'L')
     pdf.cell(0, 7, f"R$ {total_despesas:.2f}".replace('.', ','), 0, 1, 'R')
     pdf.ln(10)
@@ -463,7 +468,6 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list):
     else:
         pdf.set_text_color(255, 0, 0)
 
-    # Passa a string diretamente para cell
     pdf.cell(100, 10, "Resultado Líquido", 0, 0, 'L')
     pdf.cell(0, 10, f"R$ {resultado_liquido:.2f}".replace('.', ','), 0, 1, 'R')
 
@@ -480,7 +484,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list):
 
 
 def exibir_lancamentos():
-    """Exibe os lançamentos em um formato tabular com botões de ação por linha."""
+    """Exibe os lançamentos em um formato tabular com botões de ação por linha (com ícones)."""
     st.subheader("Lançamentos Registrados")
 
     lancamentos_para_exibir = st.session_state.get("lancamentos", [])
@@ -518,7 +522,6 @@ def exibir_lancamentos():
         st.markdown("---")
         return
 
-    # Ordenar lançamentos por data (do mais recente para o mais antigo)
     try:
         lancamentos_para_exibir.sort(key=lambda x: datetime.strptime(x.get('Data', '1900-01-01'), '%Y-%m-%d'), reverse=True)
     except ValueError:
@@ -560,11 +563,11 @@ def exibir_lancamentos():
     # --- Exibir Lançamentos em Formato de Colunas (simulando tabela) ---
 
     # Define as colunas para cabeçalho e linhas de dados
-    # Ajuste os valores na lista para controlar a largura relativa das colunas
-    # Total da soma das larguras não importa, apenas as proporções relativas entre elas
-    col_widths = [2, 4, 3, 2, 2, 1, 1] # Exemplo: Data, Descrição, Categoria, Tipo, Valor, Editar, Excluir
+    # Ajuste as larguras relativas. As últimas duas colunas são para os botões de ícone.
+    col_widths = [2, 4, 3, 2, 2, 0.5, 0.5] # Exemplo: Data, Descrição, Categoria, Tipo, Valor, Editar Icon, Excluir Icon
 
     # Exibir Cabeçalho
+    # Use um conjunto de colunas com as mesmas larguras para o cabeçalho
     cols_header = st.columns(col_widths)
     headers = ["Data", "Descrição", "Categoria", "Tipo", "Valor", "", ""] # Headers, vazios para colunas de botão
 
@@ -575,11 +578,8 @@ def exibir_lancamentos():
 
     st.markdown("---") # Linha horizontal após o cabeçalho
 
-    # Exibir Linhas de Dados com Botões
-    # Precisamos do índice original do lançamento na lista session_state['lancamentos']
-    # para que as ações de edição/exclusão modifiquem o item correto,
-    # mesmo que a lista 'lancamentos_para_exibir' esteja ordenada.
 
+    # Exibir Linhas de Dados com Botões de Ícone
     for i, lancamento_ordenado in enumerate(lancamentos_para_exibir):
         # Cria as colunas para a linha atual de dados e botões
         cols_data = st.columns(col_widths)
@@ -588,8 +588,6 @@ def exibir_lancamentos():
         try:
             indice_original = st.session_state['lancamentos'].index(lancamento_ordenado)
         except ValueError:
-             # Isso só aconteceria se o item não fosse encontrado na lista original,
-             # o que é improvável se 'lancamentos_para_exibir' veio de lá.
              continue # Pula para o próximo item se não encontrar (segurança)
 
 
@@ -607,6 +605,7 @@ def exibir_lancamentos():
 
 
         # Coloca os dados formatados nas colunas correspondentes
+        # st.write() lida bem com o conteúdo, mas a estilização CSS para alinhamento vertical foi adicionada para ajudar
         with cols_data[0]:
             st.write(data_formatada)
         with cols_data[1]:
@@ -618,29 +617,30 @@ def exibir_lancamentos():
         with cols_data[4]:
             st.write(valor_formatado)
 
-        # Coloca os botões de ação nas colunas correspondentes
+        # Coloca os botões de ação (agora ícones) nas colunas correspondentes
         with cols_data[5]:
-             # Usa o índice original do lançamento na session state como key para o botão
-            if st.button("Editar", key=f"editar_{indice_original}", help=f"Editar: {descricao}"):
+             # Botão Editar (ícone)
+             # Use o índice original do lançamento na session state como key
+             # O help text aparece ao passar o mouse
+            if st.button("✏️", key=f"editar_{indice_original}", help=f"Editar: {descricao}"):
                 st.session_state['editar_indice'] = indice_original
-                # Copia os dados do lançamento original para o estado de edição
                 st.session_state['editar_lancamento'] = st.session_state['lancamentos'][indice_original].copy()
-                st.session_state['show_edit_modal'] = True # Abre o formulário de edição
-                st.session_state['show_add_modal'] = False # Fecha o formulário de adicionar, se estiver aberto
-                st.rerun() # Roda o aplicativo novamente para exibir o formulário de edição
+                st.session_state['show_edit_modal'] = True
+                st.session_state['show_add_modal'] = False
+                st.rerun()
 
         with cols_data[6]:
-            # Usa o índice original do lançamento na session state como key para o botão
-            if st.button("Excluir", key=f"excluir_{indice_original}", help=f"Excluir: {descricao}", type="secondary"):
-                del st.session_state['lancamentos'][indice_original] # Remove da lista original
-                salvar_lancamentos() # Salva as alterações
+            # Botão Excluir (ícone)
+            # Use o índice original do lançamento na session state como key
+            if st.button("🗑️", key=f"excluir_{indice_original}", help=f"Excluir: {descricao}", type="secondary"):
+                del st.session_state['lancamentos'][indice_original]
+                salvar_lancamentos()
                 st.success("Lançamento excluído com sucesso!")
-                # Limpa o estado de edição se o item excluído era o que estava sendo editado
                 if st.session_state.get('editar_indice') == indice_original:
                     st.session_state['editar_indice'] = None
                     st.session_state['editar_lancamento'] = None
                     st.session_state['show_edit_modal'] = False
-                st.rerun() # Roda o aplicativo novamente para atualizar a lista exibida
+                st.rerun()
 
         st.markdown("---") # Linha separadora para cada lançamento (simulando borda de linha)
 
@@ -650,13 +650,11 @@ def main():
     """Função principal que renderiza o dashboard."""
     st.title("Sistema de Lançamentos Financeiros")
 
-    # Controla a exibição dos formulários de Adicionar ou Editar
     if st.session_state.get('show_add_modal', False):
          render_add_lancamento_form()
     elif st.session_state.get('show_edit_modal', False):
          render_edit_lancamento_form()
     else:
-        # Se nenhum formulário estiver aberto, exibe o botão para adicionar e as outras seções
         if st.button("Adicionar Novo Lançamento"):
              st.session_state['show_add_modal'] = True
              st.session_state['show_edit_modal'] = False
