@@ -1,6 +1,4 @@
 streamlit
-datetime
-os
 pandas
 io
 fpdf
