@@ -649,11 +649,13 @@ def exibir_lancamentos():
         index_to_confirm_delete = st.session_state['awaiting_delete_confirmation_index']
         # Exibe a mensagem e botões de confirmação em um contêiner separado para melhor controle
         with st.container():
-             st.warning(f"Confirmar exclusão do lançamento (Índice na lista original: {index_to_confirm_delete})?")
+             # Removido 'Índice na lista original' da mensagem para simplificar a UI
+             st.warning(f"Confirmar exclusão deste lançamento?")
              col_confirm_del, col_cancel_del = st.columns([1, 1])
              with col_confirm_del:
                  # Adicionado key="confirm_delete_button" para evitar conflitos
-                 if st.button("Sim, Excluir", key="confirm_delete_button", kind="secondary"):
+                 # Removido kind="secondary" para compatibilidade com versões antigas do Streamlit
+                 if st.button("Sim, Excluir", key="confirm_delete_button"):
                      # Verifica se o índice ainda é válido antes de excluir
                      if 0 <= index_to_confirm_delete < len(st.session_state.get("lancamentos", [])):
                         del st.session_state["lancamentos"][index_to_confirm_delete]
@@ -681,26 +683,28 @@ def exibir_lancamentos():
     usuario_email = st.session_state.get('usuario_atual_email')
 
     # Filtra e armazena o índice original junto com os dados
-    if st.session_state.get('tipo_usuario_atual') == 'Administrador':
-        st.info("Exibindo TODOS os lançamentos (Admin view).")
-        # Inclui o índice original para cada lançamento
-        for i, lancamento in enumerate(st.session_state.get("lancamentos", [])):
+    # A lista principal st.session_state["lancamentos"] é a fonte da verdade e mantém a ordem original (de adição)
+    # Iteramos sobre ela para encontrar os lançamentos relevantes e guardar seus índices originais.
+    for i, lancamento in enumerate(st.session_state.get("lancamentos", [])):
+        if st.session_state.get('tipo_usuario_atual') == 'Administrador':
+             # Admin vê todos, guarda o índice original
              lancamento_copy = lancamento.copy()
              lancamento_copy['_original_index'] = i # Adiciona o índice original
              lancamentos_para_exibir_com_indice.append(lancamento_copy)
+        elif lancamento.get('user_email') == usuario_email:
+            # Cliente vê apenas os seus, guarda o índice original
+            lancamento_copy = lancamento.copy()
+            lancamento_copy['_original_index'] = i # Adiciona o índice original
+            lancamentos_para_exibir_com_indice.append(lancamento_copy)
+
+
+    if st.session_state.get('tipo_usuario_atual') == 'Administrador':
         filename_suffix = "admin"
         usuario_para_pdf_title = "Todos os Lançamentos"
     else:
-        st.info(f"Exibindo seus lançamentos, {st.session_state.get('usuario_atual_nome', 'usuário')} (Client view).")
-        # Inclui o índice original apenas para os lançamentos do usuário logado
-        for i, lancamento in enumerate(st.session_state.get("lancamentos", [])):
-             if lancamento.get('user_email') == usuario_email:
-                 lancamento_copy = lancamento.copy()
-                 lancamento_copy['_original_index'] = i # Adiciona o índice original
-                 lancamentos_para_exibir_com_indice.append(lancamento_copy)
-
         filename_suffix = st.session_state.get('usuario_atual_nome', 'usuario').replace(" ", "_").lower()
         usuario_para_pdf_title = st.session_state.get('usuario_atual_nome', 'Usuário')
+
 
     # A lista lancamentos_para_exibir_com_indice agora contém os dados filtrados/selecionados com o índice original.
     # Usaremos esta lista para a exibição da tabela e botões de exportação.
@@ -708,11 +712,11 @@ def exibir_lancamentos():
     if not lancamentos_para_exibir_com_indice:
         st.info("Nenhum lançamento encontrado para este usuário.")
         # As funções de exportação esperam apenas a lista de dicionários de lançamento, sem o _original_index
-        lancamentos_para_exportar = [ {k: v for k, v in item.items() if k != '_original_index'} for item in lancamentos_para_exibir_com_indice ]
+        lancamentos_para_exportar = [] # Lista vazia para exportação
 
         col_excel, col_pdf_lista, col_pdf_dr = st.columns([1, 1, 1])
         with col_excel:
-             excel_buffer = exportar_lancamentos_para_excel(lancamentos_para_exportar) # Passa lista vazia (após remover _original_index)
+             excel_buffer = exportar_lancamentos_para_excel(lancamentos_para_exportar) # Passa lista vazia
              if excel_buffer:
                 st.download_button(
                     label="📥 Exportar para Excel (Vazio)",
@@ -721,7 +725,7 @@ def exibir_lancamentos():
                     mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
         with col_pdf_lista:
-             # Use a sua função original para exportar a lista vazia (após remover _original_index)
+             # Use a sua função original para exportar a lista vazia
              pdf_lista_buffer = exportar_lancamentos_para_pdf(lancamentos_para_exportar, usuario_para_pdf_title)
              st.download_button(
                 label="📄 Exportar Lista PDF (Vazia)",
@@ -730,7 +734,7 @@ def exibir_lancamentos():
                 mime='application/pdf'
              )
         with col_pdf_dr:
-             # Use a nova função para exportar a DR vazia (após remover _original_index)
+             # Use a nova função para exportar a DR vazia
              pdf_dr_buffer = gerar_demonstracao_resultados_pdf(lancamentos_para_exportar, usuario_para_pdf_title)
              st.download_button(
                 label="📊 Exportar DR PDF (Vazia)",
@@ -743,8 +747,9 @@ def exibir_lancamentos():
 
 
     # Ordenar lançamentos por data (do mais recente para o mais antigo)
+    # Agora ordenamos a lista que já contém o índice original
     try:
-        # Ordena a lista que agora contém o índice original
+        # Usamos a lista que já foi filtrada/selecionada corretamente e contém o índice original
         lancamentos_para_exibir_com_indice.sort(key=lambda x: datetime.strptime(x.get('Data', '1900-01-01'), '%Y-%m-%d'), reverse=True)
     except ValueError:
         st.warning("Não foi possível ordenar os lançamentos por data devido a formato inválido.")
@@ -839,7 +844,8 @@ def exibir_lancamentos():
 
         # Adicionar botões de ação abaixo da tabela, referenciando a linha correta
         for index, row in df_exibicao.iterrows():
-            # --- CORREÇÃO AQUI: Obtém o índice original diretamente da linha ---
+            # --- OBTÉM O ÍNDICE ORIGINAL DIRETAMENTE DA LINHA ---
+            # Este índice foi incluído ao preparar os dados para exibição
             original_index = row['_original_index']
 
             col1, col2, col3 = st.columns([1, 1, 8]) # Colunas para alinhar os botões
@@ -855,10 +861,10 @@ def exibir_lancamentos():
             with col2:
                 # Botão Excluir - Usa on_click para definir o estado de espera por confirmação
                 # Passa o original_index obtido diretamente da linha
+                # --- CORREÇÃO AQUI: Removido kind="secondary" ---
                 st.button(
                     "🗑️ Excluir",
                     key=f"delete_lancamento_{original_index}",
-                    kind="secondary",
                     on_click=lambda idx=original_index: st.session_state.update(awaiting_delete_confirmation_index=idx)
                 )
             # A terceira coluna ([8]) permanece vazia para ocupar espaço
@@ -1118,7 +1124,7 @@ elif st.session_state['pagina_atual'] == 'cadastro':
     st.rerun()
 elif st.session_state['pagina_atual'] == 'gerenciar_usuarios':
      pagina_gerenciar_usuarios() # Nova página para gerenciar usuários (inclui cadastro/exibição)
-elif st.session_state['pagina_atual'] == 'gerenciar_categorias_receita':
+elif st.session_state['pagina_atual'] == 'gerenciar_categorias_receita']:
      gerenciar_categorias_receita() # Nova página para gerenciar categorias de receita
 elif st.session_state['pagina_atual'] == 'logout':
     st.session_state['autenticado'] = False
