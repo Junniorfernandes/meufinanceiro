@@ -501,7 +501,7 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
         pdf.ln()
 
     pdf_output = pdf.output(dest='S')
-    return io.BytesIO(pdf_output)
+    return io.BytesIO(pdf_output.encode('latin1'))
 
 # --- FUNÇÃO para gerar a Demonstração de Resultados em PDF ---
 def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário"):
@@ -602,7 +602,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
 
     # Finaliza o PDF e retorna como BytesIO
     pdf_output = pdf.output(dest='S')
-    return io.BytesIO(pdf_output)
+    return io.BytesIO(pdf_output.encode('latin1'))
 
 
 def exibir_lancamentos():
