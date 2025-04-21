@@ -2,4 +2,4 @@ streamlit
 pandas
 fpdf
 openpyxl
-supabase-py
+supabase-py==2.5.3
