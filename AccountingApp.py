@@ -604,6 +604,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     pdf.set_text_color(0, 0, 0)
 
     # Assinaturas da DRE
+    pdf.cell(0, 7, "_" * 50, ln=1)  # linha visual
     signatario_nome = st.session_state.get('usuarios', [])[st.session_state.get('usuario_atual_index', 0)].get("SignatarioNome", "")
     signatario_cargo = st.session_state.get('usuarios', [])[st.session_state.get('usuario_atual_index', 0)].get("SignatarioCargo", "")
 
