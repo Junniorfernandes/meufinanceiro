@@ -449,70 +449,44 @@ def exportar_lancamentos_para_excel(lancamentos_list):
         st.error(f"Ocorreu um erro ao gerar o arquivo Excel: {e}")
         return None
 
-# Função para exportar lançamentos para PDF (lista detalhada) - Mantida a original
-def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
+def exportar_lancamentos_para_pdf(lancamentos_list, nome_usuario):
+    from fpdf import FPDF
+    import io
+
     pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(0, 10, f"Relatório de Lançamentos - {nome_usuario}", ln=True, align='C')
 
-    # Tenta adicionar uma fonte que suporte acentos. Se não encontrar, usa Arial padrão.
-    # Certifique-se de ter um arquivo .ttf (como Arial.ttf) no mesmo diretório do seu script.
-    try:
-        pdf.add_font('Arial_Unicode', '', 'Arial_Unicode.ttf') # Substitua 'Arial_Unicode.ttf' pelo caminho ou nome do seu arquivo .ttf
-        pdf.set_font('Arial_Unicode', '', 12)
-        font_for_table = 'Arial_Unicode'
-    except Exception as e:
-         # st.warning(f"Erro ao carregar fonte personalizada para PDF: {e}. Usando fonte padrão.") # Mantendo o aviso na console
-         pdf.set_font("Arial", '', 12)
-         font_for_table = 'Arial'
-
-
-    pdf.set_font("Arial", 'B', 12) # Use negrito da fonte padrão para o título (conforme original)
-    report_title = f"Relatório de Lançamentos - {usuario_nome}"
-    pdf.cell(0, 10, report_title.encode('latin1', 'replace').decode('latin1'), 0, 1, 'C')
     pdf.ln(10)
-
-    # Usa a fonte com suporte a acentos (se carregada) ou a padrão para os cabeçalhos e dados da tabela
-    pdf.set_font(font_for_table, 'B', 10) # Cabeçalhos em negrito
-    col_widths = [20, 50, 30, 20, 20]
+    pdf.set_font("Arial", 'B', 10)
+    col_widths = [30, 50, 40, 30, 40]
     headers = ["Data", "Descrição", "Categoria", "Tipo", "Valor"]
-
     for i, header in enumerate(headers):
-        pdf.cell(col_widths[i], 10, header.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C', fill=False)
+        pdf.cell(col_widths[i], 10, header, 1, 0, 'C')
     pdf.ln()
 
-    pdf.set_font(font_for_table, '', 10) # Dados da tabela em fonte normal
+    pdf.set_font("Arial", '', 10)
     for lancamento in lancamentos_list:
-        try:
-            data_formatada = datetime.strptime(lancamento.get("Data", '1900-01-01'), "%Y-%m-%d").strftime("%d/%m/%Y")
-        except ValueError:
-            data_formatada = lancamento.get("Data", "Data Inválida")
-
-        descricao = lancamento.get("Descrição", "")
-        categoria = lancamento.get("Categorias", "")
-        tipo = lancamento.get("Tipo de Lançamento", "")
-        valor_formatado = f"R$ {lancamento.get('Valor', 0.0):.2f}".replace('.', ',')
-
-        pdf.cell(col_widths[0], 10, data_formatada.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C')
-        pdf.cell(col_widths[1], 10, descricao.encode('latin1', 'replace').decode('latin1'), 1, 0, 'L')
-        pdf.cell(col_widths[2], 10, categoria.encode('latin1', 'replace').decode('latin1') if categoria else "", 1, 0, 'C')
-        pdf.cell(col_widths[3], 10, tipo.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C')
-        pdf.cell(col_widths[4], 10, valor_formatado.encode('latin1', 'replace').decode('latin1'), 1, 0, 'R')
-
+        pdf.cell(col_widths[0], 10, str(lancamento['Data']), 1)
+        pdf.cell(col_widths[1], 10, str(lancamento['Descrição']), 1)
+        pdf.cell(col_widths[2], 10, str(lancamento['Categoria']), 1)
+        pdf.cell(col_widths[3], 10, str(lancamento['Tipo']), 1)
+        pdf.cell(col_widths[4], 10, f"R$ {lancamento['Valor']:.2f}", 1)
         pdf.ln()
-        
-        # --- Assinatura do PDF ---
-        signatario_nome = st.session_state.get('usuarios', [])[st.session_state.get('usuario_atual_index', 0)].get("SignatarioNome", "")
-        signatario_cargo = st.session_state.get('usuarios', [])[st.session_state.get('usuario_atual_index', 0)].get("SignatarioCargo", "")
 
-        if signatario_nome or signatario_cargo:
-          pdf.ln(10)
-          pdf.set_font(font_for_table, '', 10)
-          pdf.cell(0, 10, "Assinado por:", 0, 1, 'L')
-          if signatario_nome:
-             pdf.cell(0, 8, signatario_nome.encode('latin1', 'replace').decode('latin1'), 0, 1, 'L')
-          if signatario_cargo:
-             pdf.cell(0, 8, signatario_cargo.encode('latin1', 'replace').decode('latin1'), 0, 1, 'L')
+    # ⬇️⬇️ AQUI SIM: assinatura DEPOIS do loop
+    signatario_nome = st.session_state.get('usuarios', [])[st.session_state.get('usuario_atual_index', 0)].get("SignatarioNome", "")
+    signatario_cargo = st.session_state.get('usuarios', [])[st.session_state.get('usuario_atual_index', 0)].get("SignatarioCargo", "")
+
+    if signatario_nome or signatario_cargo:
+        pdf.ln(10)
+        pdf.set_font("Arial", '', 10)
+        pdf.cell(0, 10, "Assinado por:", 0, 1, 'L')
+        if signatario_nome:
+            pdf.cell(0, 8, signatario_nome.encode('latin1', 'replace').decode('latin1'), 0, 1, 'L')
+        if signatario_cargo:
+            pdf.cell(0, 8, signatario_cargo.encode('latin1', 'replace').decode('latin1'), 0, 1, 'L')
 
     pdf_output = pdf.output(dest='S')
     return io.BytesIO(pdf_output.encode('latin1'))
