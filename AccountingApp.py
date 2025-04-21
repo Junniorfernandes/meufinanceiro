@@ -1,12 +1,12 @@
 import streamlit as st
 from datetime import datetime
-# import json # Não precisamos mais importar json para usuários
-import os # Podemos manter para lançamentos, mas USUARIOS_FILE não será usado
+import json
+import os
 import pandas as pd
 import io
-from fpdf import FPDF
+from fpdf import FPDF # Certifique-se de ter a biblioteca fpdf2 instalada (pip install fpdf2)
 
-# --- Estilo CSS para os botões de navegação ---
+# --- Estilo CSS para os botões ---
 st.markdown(
     """
     <style>
@@ -27,15 +27,15 @@ st.markdown(
         background-color: #d4d7de; /* Cor de fundo ao passar o mouse */
         color: #262730;
     }
-    /* Estilo para os botões de exclusão */
+    /* Estilo para os botões de exclusão (secondary button) */
     div.stButton > button[kind="secondary"] {
-        background-color: #003548; /* Fundo vermelho claro */
-        color: #ffffff; /* Texto vermelho escuro */
-        border-color: #fbcfe8; /* Borda vermelha */
+        background-color: #e0f2f7; /* Fundo azul claro (ajustado para Streamlit secondary default) */
+        color: #003548; /* Texto azul escuro */
+        border-color: #b2e2f2; /* Borda azul */
     }
      div.stButton > button[kind="secondary"]:hover {
-        background-color: #D6110F; /* Fundo vermelho ao passar o mouse */
-        color: #ffffff;
+        background-color: #b2e2f2; /* Fundo azul ao passar o mouse */
+        color: #003548;
     }
     </style>
     """,
@@ -43,125 +43,50 @@ st.markdown(
 )
 
 DATA_FILE = "lancamentos.json"
-# USUARIOS_FILE = "usuarios.json" # Não precisamos mais deste arquivo
+# USUARIOS_FILE e CATEGORIAS_FILE removidos
 
 # --- Funções de Carregamento e Salvamento ---
 
-# --- REMOVIDA a função salvar_usuarios, pois os usuários são hardcoded ---
-# def salvar_usuarios():
-#     with open(USUARIOS_FILE, "w") as f:
-#         json.dump(st.session_state.get('usuarios', []), f)
+# Funções de usuário e categorias removidas
+# def salvar_usuarios(): ...
+# def carregar_usuarios(): ...
+# def salvar_categorias(): ...
+# def carregar_categorias(): ...
 
-# --- MODIFICADA a função carregar_usuarios para usar dados hardcoded ---
-def carregar_usuarios():
-    # Lista de usuários hardcoded no código
-    usuarios_hardcoded = [
-        {
-            "ID": 1,
-            "Nome": "Junior Fernandes",
-            "Email": "valmirfernandescontabilidade@gmail.com",
-            "Senha": "114316", # NUNCA FAÇA ISSO EM PRODUÇÃO! Use hashes!
-            "Tipo": "Administrador",
-            "categorias_receita": ["Serviços", "Vendas", "Consultoria"] # Categorias personalizadas
-        },
-         {
-            "ID": 2,
-            "Nome": "Junior Fernandes",
-            "Email": "almirfernandescontabilidade@hotmail.com",
-            "Senha": "123456", # NUNCA FAÇA ISSO EM PRODUÇÃO!
-            "Tipo": "Cliente",
-            "categorias_receita": ["Vendas", "Outras Receitas"] # Categorias personalizadas
-        },
-         {
-            "ID": 3,
-            "Nome": "Camila Garcia",
-            "Email": "boatardecamila@gmail.com    ",
-            "Senha": "123456", # NUNCA FAÇA ISSO EM PRODUÇÃO!
-            "Tipo": "Cliente",
-            "categorias_receita": ["Serviços"] # Categorias personalizadas
-        }
-        # Adicione mais usuários aqui conforme necessário
-    ]
-
-    # Atribui a lista hardcoded diretamente ao estado da sessão
-    st.session_state['usuarios'] = usuarios_hardcoded
-
-    # --- Mantém esta parte para compatibilidade, embora com hardcoded seria melhor garantir que
-    #     'categorias_receita' já exista na lista acima ---
-    for usuario in st.session_state['usuarios']:
-         if 'categorias_receita' not in usuario:
-              usuario['categorias_receita'] = []
-    # ---------------------------------------------------------------------
-
-
-# Funções de lançamento (mantidas, pois dependem do arquivo JSON)
 def salvar_lancamentos():
-    # Garante que 'user_email' está presente antes de salvar
-    lancamentos_para_salvar = []
-    for lancamento in st.session_state.get("lancamentos", []):
-        if 'user_email' not in lancamento:
-            # Isso pode acontecer se você tiver dados antigos sem user_email.
-            # Neste caso, pode ser necessário adicionar um email padrão ou tratar
-            # como um erro, dependendo da lógica de negócio.
-            # Por enquanto, vamos adicionar um placeholder se faltar.
-            lancamento['user_email'] = 'unknown@user.com'
-        lancamentos_para_salvar.append(lancamento)
-
-    try:
-        with open(DATA_FILE, "w") as f:
-            json.dump(lancamentos_para_salvar, f, indent=4) # Adicionado indent para legibilidade
-    except Exception as e:
-        st.error(f"Erro ao salvar lançamentos: {e}")
-
+    """Salva a lista de lançamentos no arquivo JSON."""
+    with open(DATA_FILE, "w") as f:
+        json.dump(st.session_state.get("lancamentos", []), f, indent=4) # Adicionado indent para legibilidade
 
 def carregar_lancamentos():
+    """Carrega a lista de lançamentos do arquivo JSON."""
     if os.path.exists(DATA_FILE):
         try:
             with open(DATA_FILE, "r") as f:
                 content = f.read()
                 if content:
-                    lancamentos = json.loads(content)
-                    # Garante que cada lançamento tem o campo user_email (para compatibilidade)
-                    # Se lançamentos antigos não tiverem, atribui um valor padrão ou trata.
-                    for lancamento in lancamentos:
-                         if 'user_email' not in lancamento:
-                              lancamento['user_email'] = 'unknown@user.com' # Valor padrão para lançamentos sem usuário associado
-                    st.session_state["lancamentos"] = lancamentos
+                    st.session_state["lancamentos"] = json.loads(content)
                 else:
                      st.session_state["lancamentos"] = []
         except json.JSONDecodeError:
             st.error("Erro ao decodificar o arquivo de lançamentos. Criando um novo.")
             st.session_state["lancamentos"] = []
-            salvar_lancamentos()
-        except Exception as e:
-             st.error(f"Erro inesperado ao carregar lançamentos: {e}")
-             st.session_state["lancamentos"] = []
-             salvar_lancamentos()
+            salvar_lancamentos() # Salva o arquivo vazio após erro
     else:
         st.session_state["lancamentos"] = []
-
+        salvar_lancamentos() # Cria o arquivo vazio se não existir
 
 # --- Inicialização de Estado ---
-if 'usuarios' not in st.session_state:
-    # Agora apenas chama a função que carrega os usuários hardcoded
-    carregar_usuarios()
-    # Não precisa salvar_usuarios() aqui
+# Removidos estados de usuário, autenticação e categorias do usuário
+# if 'usuarios' not in st.session_state: carregar_usuarios()
+# if 'pagina_atual' not in st.session_state: st.session_state['pagina_atual'] = 'dashboard'
+# if 'autenticado' not in st.session_state: st.session_state['autenticado'] = False
+# if 'usuario_atual_email' not in st.session_state: st.session_state['usuario_atual_email'] = None
+# if 'usuario_atual_nome' not in st.session_state: st.session_state['usuario_atual_nome'] = None
+# if 'tipo_usuario_atual' not in st.session_state: st.session_state['tipo_usuario_atual'] = None
+# if 'usuario_atual_index' not in st.session_state: st.session_state['usuario_atual_index'] = None
 
-if 'pagina_atual' not in st.session_state:
-    st.session_state['pagina_atual'] = 'dashboard'
-if 'autenticado' not in st.session_state:
-    st.session_state['autenticado'] = False
-if 'usuario_atual_email' not in st.session_state:
-    st.session_state['usuario_atual_email'] = None
-if 'usuario_atual_nome' not in st.session_state:
-    st.session_state['usuario_atual_nome'] = None
-if 'tipo_usuario_atual' not in st.session_state:
-    st.session_state['tipo_usuario_atual'] = None
-if 'usuario_atual_index' not in st.session_state:
-     st.session_state['usuario_atual_index'] = None
-
-
-# Variáveis de estado para controlar a exibição dos "popups"
+# Variáveis de estado para controlar a exibição dos "popups"/formulários inline
 if 'show_add_modal' not in st.session_state:
     st.session_state['show_add_modal'] = False
 if 'show_edit_modal' not in st.session_state:
@@ -170,85 +95,31 @@ if 'editar_indice' not in st.session_state:
      st.session_state['editar_indice'] = None
 if 'editar_lancamento' not in st.session_state:
      st.session_state['editar_lancamento'] = None
-if 'editar_usuario_index' not in st.session_state:
-     st.session_state['editar_usuario_index'] = None
-if 'editar_usuario_data' not in st.session_state:
-     st.session_state['editar_usuario_data'] = None
+# if 'editar_usuario_index' not in st.session_state: st.session_state['editar_usuario_index'] = None # Removido
+# if 'editar_usuario_data' not in st.session_state: st.session_state['editar_usuario_data'] = None # Removido
 
 # Carrega os lançamentos ao iniciar o app
-# Carrega usuários *antes* de lançamentos, caso a lógica de lançamentos precise de info do usuário (embora neste código não precise diretamente)
-# Isso já é feito acima: if 'usuarios' not in st.session_state: carregar_usuarios()
-carregar_lancamentos() # Carrega os lançamentos de 'lancamentos.json'
+carregar_lancamentos()
 if "lancamentos" not in st.session_state:
     st.session_state["lancamentos"] = []
 
+# Define as categorias fixas de Receita
+CATEGORIAS_FIXAS_RECEITA = ["Serviços","Vendas"]
+# Não há gestão de categorias de Despesa na UI modificada, mas elas existem nos dados.
 
-# Define as categorias padrão de receita (conforme seu código original)
-CATEGORIAS_PADRAO_RECEITA = ["Serviços","Vendas"]
-# O código original não tinha categorias padrão de despesa ou gestão delas por usuário.
-# A Demonstração de Resultados agrupará despesas pelo campo 'Categorias' existente,
-# mas sem gestão específica de categorias de despesa no UI.
-
-# Inicializa a lista de categorias disponíveis para o usuário logado (será atualizada no login)
-if 'todas_categorias_receita' not in st.session_state:
-     st.session_state['todas_categorias_receita'] = CATEGORIAS_PADRAO_RECEITA.copy() # Começa com as padrão
-# Mantendo a estrutura original que não tinha 'todas_categorias_despesa' no estado
-
-
-# --- MODIFICADA a função excluir_usuario ---
-# Agora ela apenas remove o usuário da lista hardcoded no estado da sessão.
-# Nenhuma alteração persistirá após a reinicialização do script.
-def excluir_usuario(index):
-    if 0 <= index < len(st.session_state.get('usuarios', [])):
-        # Remover da lista no estado da sessão
-        del st.session_state['usuarios'][index]
-        # Como os usuários são hardcoded, não há arquivo JSON para salvar.
-        # A exclusão é APENAS para a sessão atual. Ao reiniciar o script, os usuários hardcoded voltam.
-        st.warning("Usuário removido da lista (apenas para esta sessão). Usuários hardcoded retornarão ao reiniciar o script.")
-        # st.success("Usuário excluído com sucesso!") # Mudei para warning para indicar a transitoriedade
-        st.rerun()
-    else:
-        st.error("Índice de usuário inválido.")
-
-
-def pagina_login():
-    st.title("Login")
-    email = st.text_input("E-mail")
-    senha = st.text_input("Senha", type="password")
-    login_button = st.button("Entrar")
-
-    if login_button:
-        # Percorre a lista de usuários hardcoded no estado da sessão
-        for i, usuario in enumerate(st.session_state.get('usuarios', [])):
-            # Compara com os campos 'Email' e 'Senha' da lista hardcoded
-            if usuario.get('Email') == email and usuario.get('Senha') == senha:
-                st.session_state['autenticado'] = True
-                st.session_state['usuario_atual_email'] = usuario.get('Email')
-                st.session_state['usuario_atual_nome'] = usuario.get('Nome')
-                st.session_state['tipo_usuario_atual'] = usuario.get('Tipo')
-                st.session_state['usuario_atual_index'] = i # Guarda o índice do usuário logado
-
-                # Carrega as categorias personalizadas de receita do usuário logado e combina com as padrão (conforme original)
-                usuario_categorias_receita = usuario.get('categorias_receita', [])
-                todas_unicas_receita = list(dict.fromkeys(CATEGORIAS_PADRAO_RECEITA + usuario_categorias_receita))
-                st.session_state['todas_categorias_receita'] = todas_unicas_receita
-
-                # Não adiciona lógica para categorias de despesa no login, mantendo o original
-
-                st.success(f"Login realizado com sucesso, {st.session_state['usuario_atual_nome']}!")
-                st.rerun()
-                return
-
-        st.error("E-mail ou senha incorretos.")
+# Funções de usuário e login removidas
+# def excluir_usuario(index): ...
+# def pagina_login(): ...
 
 # --- Funções para Renderizar os Formulários (agora na área principal) ---
 
 def render_add_lancamento_form():
-    if not st.session_state.get('autenticado'):
-        return
+    """Renderiza o formulário para adicionar um novo lançamento."""
+    # Remove autenticação check
+    # if not st.session_state.get('autenticado'): return
 
     with st.expander("Adicionar Novo Lançamento", expanded=True):
-        st.subheader(f"Adicionar Lançamento para {st.session_state.get('usuario_atual_nome', 'seu usuário')}")
+        st.subheader("Adicionar Lançamento") # Título genérico sem nome de usuário
 
         # O formulário contém os campos e o botão de submissão
         with st.form(key="add_lancamento_form"):
@@ -260,18 +131,17 @@ def render_add_lancamento_form():
             # Cria um placeholder para a Categoria
             categoria_placeholder = st.empty()
 
-            categorias = "" # Inicializa a variável de categoria
-            # Só exibe o campo Categoria dentro do placeholder se o tipo for Receita (conforme original)
+            categoria = "" # Inicializa a variável de categoria
+            # Só exibe o campo Categoria dentro do placeholder se o tipo for Receita
             if tipo == "Receita":
-                # Usa a lista combinada de categorias de receita do usuário logado
-                categorias_disponiveis = st.session_state.get('todas_categorias_receita', CATEGORIAS_PADRAO_RECEITA)
-                categorias = categoria_placeholder.selectbox(
+                # Usa as categorias fixas diretamente
+                categoria = categoria_placeholder.selectbox(
                     "Categoria",
-                    categorias_disponiveis,
+                    CATEGORIAS_FIXAS_RECEITA, # Usa as categorias fixas
                     key="add_lanc_categoria_receita_form"
                 )
-            # Se o tipo não for Receita, o placeholder permanece vazio, e 'categorias' continua ""
-            # Seu código original não tinha seleção de categoria para Despesa aqui.
+            # Se o tipo não for Receita, o placeholder permanece vazio, e 'categoria' continua ""
+            # Não há seleção de categoria para Despesa na UI, mas o campo 'Categorias' existe na estrutura de dados.
 
             valor = st.number_input("Valor", format="%.2f", min_value=0.0, key="add_lanc_valor_form")
 
@@ -279,8 +149,8 @@ def render_add_lancamento_form():
             submit_button = st.form_submit_button("Adicionar Lançamento")
 
             if submit_button:
-                # Validação de categoria apenas para Receita (conforme original)
-                if not data_str or not descricao or valor is None or (tipo == "Receita" and not categorias):
+                # Validação de categoria apenas para Receita
+                if not data_str or not descricao or valor is None or (tipo == "Receita" and not categoria):
                     st.warning("Por favor, preencha todos os campos obrigatórios.")
                 else:
                     try:
@@ -288,10 +158,10 @@ def render_add_lancamento_form():
                         novo_lancamento = {
                             "Data": data_obj,
                             "Descrição": descricao,
-                            "Categorias": categorias, # Salva a categoria (será vazia se não for Receita no original)
+                            "Categorias": categoria, # Salva a categoria (será vazia se não for Receita)
                             "Tipo de Lançamento": tipo,
                             "Valor": valor,
-                            "user_email": st.session_state['usuario_atual_email']
+                            # Campo 'user_email' removido
                         }
                         st.session_state["lancamentos"].append(novo_lancamento)
                         salvar_lancamentos()
@@ -308,7 +178,10 @@ def render_add_lancamento_form():
 
 
 def render_edit_lancamento_form():
-    if not st.session_state.get('autenticado') or st.session_state.get('editar_indice') is None:
+    """Renderiza o formulário para editar um lançamento existente."""
+    # Remove autenticação check
+    # if not st.session_state.get('autenticado') or st.session_state.get('editar_indice') is None: return
+    if st.session_state.get('editar_indice') is None:
         return
 
     indice = st.session_state["editar_indice"]
@@ -320,23 +193,15 @@ def render_edit_lancamento_form():
         st.rerun()
         return
 
-
     lancamento_a_editar = st.session_state.get("lancamentos", [])[indice]
 
-
-    is_owner = lancamento_a_editar.get('user_email') == st.session_state.get('usuario_atual_email')
-    is_admin = st.session_state.get('tipo_usuario_atual') == 'Administrador'
-
-    if not (is_owner or is_admin):
-        st.error("Você não tem permissão para editar este lançamento.")
-        st.session_state['editar_indice'] = None
-        st.session_state['editar_lancamento'] = None
-        st.session_state['show_edit_modal'] = False
-        st.rerun()
-        return
+    # Remove user/admin permission check
+    # is_owner = lancamento_a_editar.get('user_email') == st.session_state.get('usuario_atual_email')
+    # is_admin = st.session_state.get('tipo_usuario_atual') == 'Administrador'
+    # if not (is_owner or is_admin): ... # Removido
 
     with st.expander("Editar Lançamento", expanded=True):
-        st.subheader(f"Editar Lançamento")
+        st.subheader("Editar Lançamento") # Título genérico
 
         # O formulário contém os campos e o botão de submissão
         with st.form(key=f"edit_lancamento_form_{indice}"):
@@ -360,17 +225,16 @@ def render_edit_lancamento_form():
             categoria_placeholder = st.empty()
 
             categoria = "" # Inicializa a variável de categoria
-            # Só exibe o campo Categoria dentro do placeholder se o tipo for Receita (conforme original)
+            # Só exibe o campo Categoria dentro do placeholder se o tipo for Receita
             if tipo == "Receita":
-                 # Encontra o índice da categoria atual na lista combinada do usuário logado
+                 # Encontra o índice da categoria atual na lista fixa
                  current_category = lancamento.get("Categorias", "")
-                 # Usa a lista combinada de categorias do usuário logado para o selectbox
-                 categorias_disponiveis = st.session_state.get('todas_categorias_receita', CATEGORIAS_PADRAO_RECEITA)
+                 categorias_disponiveis = CATEGORIAS_FIXAS_RECEITA # Usa as categorias fixas
 
                  try:
                      default_index = categorias_disponiveis.index(current_category)
                  except ValueError:
-                     # Se a categoria salva não estiver na lista atual, use a primeira opção
+                     # Se a categoria salva não estiver nas fixas, use a primeira opção
                      default_index = 0
 
                  categoria = categoria_placeholder.selectbox(
@@ -379,10 +243,7 @@ def render_edit_lancamento_form():
                     index=default_index,
                     key=f"edit_lanc_categoria_receita_form_{indice}",
                 )
-            # Seu código original não tinha seleção de categoria para Despesa na edição.
-            # A Demonstração de Resultados usará o que estiver no campo 'Categorias' para Despesas,
-            # mesmo que não haja um selectbox para definir isso na UI original.
-
+            # Não há seleção de categoria para Despesa na UI de edição.
 
             valor = st.number_input(
                 "Valor", value=lancamento.get("Valor", 0.0), format="%.2f", min_value=0.0, key=f"edit_lanc_valor_form_{indice}"
@@ -392,7 +253,7 @@ def render_edit_lancamento_form():
             submit_button = st.form_submit_button("Salvar Edição")
 
             if submit_button:
-                 # Validação de categoria apenas para Receita (conforme original)
+                 # Validação de categoria apenas para Receita
                 if not data_str or not descricao or valor is None or (tipo == "Receita" and not categoria):
                     st.warning("Por favor, preencha todos os campos obrigatórios.")
                 else:
@@ -401,10 +262,10 @@ def render_edit_lancamento_form():
                         st.session_state["lancamentos"][indice] = {
                             "Data": data_obj,
                             "Descrição": descricao,
-                            "Categorias": categoria, # Salva a categoria (será vazia se não for Receita no original)
+                            "Categorias": categoria, # Salva a categoria (será vazia se não for Receita)
                             "Tipo de Lançamento": tipo,
                             "Valor": valor,
-                            "user_email": lancamento_a_editar.get('user_email')
+                            # Campo 'user_email' removido
                         }
                         salvar_lancamentos()
                         st.success("Lançamento editado com sucesso!")
@@ -424,19 +285,12 @@ def render_edit_lancamento_form():
 
 
 def exibir_resumo_central():
+    """Exibe o resumo financeiro (Receitas, Despesas, Total)."""
     st.subheader("Resumo Financeiro")
 
-    if st.session_state.get('tipo_usuario_atual') == 'Administrador':
-        lancamentos_filtrados = st.session_state.get("lancamentos", [])
-        st.info("Exibindo resumo de TODOS os lançamentos (Admin view).")
-    else:
-        usuario_email = st.session_state.get('usuario_atual_email')
-        lancamentos_filtrados = [
-            l for l in st.session_state.get("lancamentos", [])
-            if l.get('user_email') == usuario_email
-        ]
-        st.info(f"Exibindo seus lançamentos, {st.session_state.get('usuario_atual_nome', 'usuário')} (Client view).")
-
+    # Remove user filtering and admin view - exibe todos os lançamentos
+    lancamentos_filtrados = st.session_state.get("lancamentos", [])
+    st.info("Exibindo resumo de todos os lançamentos.") # Mensagem genérica
 
     total_receitas = 0
     total_despesas = 0
@@ -471,15 +325,15 @@ def exibir_resumo_central():
 
     st.markdown("---")
 
-# Função para exportar lançamentos para Excel (mantida a original)
+# Função para exportar lançamentos para Excel
 def exportar_lancamentos_para_excel(lancamentos_list):
+    """Exporta a lista de lançamentos para um arquivo Excel."""
+    # Remove user_email filtering during export
     lancamentos_para_df = []
     for lancamento in lancamentos_list:
         lancamento_copy = lancamento.copy()
-        # Mantendo a remoção do user_email para o Excel conforme original,
-        # mesmo que agora o user_email seja obrigatório ao salvar lançamentos.
-        if 'user_email' in lancamento_copy:
-            del lancamento_copy['user_email']
+        # if 'user_email' in lancamento_copy: # Removido
+        #     del lancamento_copy['user_email'] # Removido (garante que não vai pro excel se estiver nos dados antigos)
         lancamentos_para_df.append(lancamento_copy)
 
     df = pd.DataFrame(lancamentos_para_df)
@@ -510,28 +364,30 @@ def exportar_lancamentos_para_excel(lancamentos_list):
         st.error(f"Ocorreu um erro ao gerar o arquivo Excel: {e}")
         return None
 
-# Função para exportar lançamentos para PDF (lista detalhada) - Mantida a original
-def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
+# Função para exportar lançamentos para PDF (lista detalhada)
+def exportar_lancamentos_para_pdf(lancamentos_list):
+    """Exporta a lista detalhada de lançamentos para um arquivo PDF."""
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
 
     # Tenta adicionar uma fonte que suporte acentos. Se não encontrar, usa Arial padrão.
-    # Certifique-se de ter um arquivo .ttf (como Arial.ttf) no mesmo diretório do seu script.
+    # Certifique-se de ter um arquivo .ttf (como Arial_Unicode.ttf ou similar) no mesmo diretório do seu script,
+    # ou remova o try/except e use apenas "Arial" se não precisar de acentos no PDF.
     try:
-        # Ajuste o caminho ou nome do arquivo .ttf conforme necessário
+        # Substitua 'Arial_Unicode.ttf' pelo caminho ou nome do seu arquivo .ttf se necessário e se ele existir.
         pdf.add_font('Arial_Unicode', '', 'Arial_Unicode.ttf')
         pdf.set_font('Arial_Unicode', '', 12)
         font_for_table = 'Arial_Unicode'
     except Exception as e:
-         # st.warning(f"Erro ao carregar fonte personalizada para PDF: {e}. Usando fonte padrão.") # Mantendo o aviso na console
+         # O warning aparece no log, não no PDF. Mantenha se quiser depurar fontes.
+         # st.warning(f"Erro ao carregar fonte personalizada para PDF: {e}. Usando fonte padrão.")
          pdf.set_font("Arial", '', 12)
          font_for_table = 'Arial'
 
 
-    pdf.set_font("Arial", 'B', 12) # Use negrito da fonte padrão para o título (conforme original)
-    report_title = f"Relatório de Lançamentos - {usuario_nome}"
-    # Encode/Decode para lidar com acentos usando latin1, se a fonte padrão não suportar unicode
+    pdf.set_font("Arial", 'B', 12) # Use negrito da fonte padrão para o título
+    report_title = "Relatório Detalhado de Lançamentos" # Título genérico
     pdf.cell(0, 10, report_title.encode('latin1', 'replace').decode('latin1'), 0, 1, 'C')
     pdf.ln(10)
 
@@ -552,13 +408,12 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
             data_formatada = lancamento.get("Data", "Data Inválida")
 
         descricao = lancamento.get("Descrição", "")
-        categoria = lancamento.get("Categorias", "")
+        categoria = lancamento.get("Categorias", "") # Usa o que estiver no campo 'Categorias'
         tipo = lancamento.get("Tipo de Lançamento", "")
         valor_formatado = f"R$ {lancamento.get('Valor', 0.0):.2f}".replace('.', ',')
 
         pdf.cell(col_widths[0], 10, data_formatada.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C')
         pdf.cell(col_widths[1], 10, descricao.encode('latin1', 'replace').decode('latin1'), 1, 0, 'L')
-        # Garante que a categoria, se vazia, não cause erro no encode
         pdf.cell(col_widths[2], 10, categoria.encode('latin1', 'replace').decode('latin1') if categoria else "", 1, 0, 'C')
         pdf.cell(col_widths[3], 10, tipo.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C')
         pdf.cell(col_widths[4], 10, valor_formatado.encode('latin1', 'replace').decode('latin1'), 1, 0, 'R')
@@ -570,26 +425,28 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
 
 
 # --- FUNÇÃO para gerar a Demonstração de Resultados em PDF ---
-def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário"):
+def gerar_demonstracao_resultados_pdf(lancamentos_list):
+    """Gera um PDF da Demonstração de Resultados (DRE)."""
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
 
     # Tenta adicionar uma fonte que suporte acentos. Se não encontrar, usa Arial padrão.
-    # Certifique-se de ter um arquivo .ttf (como Arial.ttf) no mesmo diretório do seu script.
+    # Certifique-se de ter um arquivo .ttf (como Arial_Unicode.ttf ou similar) no mesmo diretório do seu script,
+    # ou remova o try/except e use apenas "Arial" se não precisar de acentos no PDF.
     try:
-        # Ajuste o caminho ou nome do arquivo .ttf conforme necessário
+        # Substitua 'Arial_Unicode.ttf' pelo caminho ou nome do seu arquivo .ttf se necessário e se ele existir.
         pdf.add_font('Arial_Unicode', '', 'Arial_Unicode.ttf')
         pdf.set_font('Arial_Unicode', '', 12)
         font_for_text = 'Arial_Unicode'
     except Exception as e:
-         # st.warning(f"Erro ao carregar fonte personalizada para PDF: {e}. Usando fonte padrão (pode não suportar acentos).") # O warning aparece no log, não no PDF
+         # st.warning(f"Erro ao carregar fonte personalizada para PDF: {e}. Usando fonte padrão (pode não suportar acentos).")
          pdf.set_font("Arial", '', 12)
          font_for_text = 'Arial'
 
 
     pdf.set_font(font_for_text, 'B', 14) # Título principal com fonte negrito
-    report_title = f"Demonstração de Resultados - {usuario_nome}"
+    report_title = "Demonstração de Resultados" # Título genérico
     pdf.cell(0, 10, report_title.encode('latin1', 'replace').decode('latin1'), 0, 1, 'C')
     pdf.ln(10)
 
@@ -601,7 +458,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
 
     for lancamento in lancamentos_list:
         tipo = lancamento.get("Tipo de Lançamento")
-        # Usa "Sem Categoria" se a chave não existir ou for vazia
+        # Usa "Sem Categoria" se a chave não existir ou for vazia para agrupamento na DRE
         categoria = lancamento.get("Categorias", "Sem Categoria") if lancamento.get("Categorias") else "Sem Categoria"
         valor = lancamento.get("Valor", 0.0)
 
@@ -647,7 +504,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
         pdf.cell(0, 7, f"R$ {valor:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
 
     pdf.set_font(font_for_text, 'B', 10) # Total em negrito
-    pdf.cell(100, 7, "Total Despesas".encode('latin1', 'replace').decode('latin1'), 0, 0, 'L')
+    pdf.cell(100, 7, "Total Despesas".encode('latin1', 'replace').replace('.', ',').decode('latin1'), 0, 0, 'L')
     pdf.cell(0, 7, f"R$ {total_despesas:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
     pdf.ln(10) # Espaço após a seção de Despesas
 
@@ -673,30 +530,15 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
 
 
 def exibir_lancamentos():
-    st.subheader("Lançamentos")
+    """Exibe a tabela de lançamentos com opções de edição e exclusão."""
+    st.subheader("Lançamentos Registrados") # Título genérico
 
-    # Define a variável antes dos blocos if/else e inicializa como lista vazia
-    lancamentos_para_exibir = []
-    usuario_email = st.session_state.get('usuario_atual_email')
-
-    if st.session_state.get('tipo_usuario_atual') == 'Administrador':
-        lancamentos_para_exibir = st.session_state.get("lancamentos", [])
-        st.info("Exibindo TODOS os lançamentos (Admin view).")
-        filename_suffix = "admin"
-        usuario_para_pdf_title = "Todos os Lançamentos"
-    else:
-        # Atribui diretamente à variável lancamentos_para_exibir no bloco else
-        lancamentos_para_exibir = [
-            l for l in st.session_state.get("lancamentos", [])
-            if l.get('user_email') == usuario_email
-        ]
-        st.info(f"Exibindo seus lançamentos, {st.session_state.get('usuario_atual_nome', 'usuário')} (Client view).")
-        filename_suffix = st.session_state.get('usuario_atual_nome', 'usuario').replace(" ", "_").lower()
-        usuario_para_pdf_title = st.session_state.get('usuario_atual_nome', 'Usuário')
-
+    # Remove user filtering - exibe todos os lançamentos
+    lancamentos_para_exibir = st.session_state.get("lancamentos", [])
+    st.info("Exibindo todos os lançamentos registrados.") # Mensagem genérica
 
     if not lancamentos_para_exibir:
-        st.info("Nenhum lançamento encontrado para este usuário.")
+        st.info("Nenhum lançamento encontrado.")
         # Exibe os botões de exportação mesmo com lista vazia (arquivos estarão vazios ou com cabeçalho)
         col_excel, col_pdf_lista, col_pdf_dr = st.columns([1, 1, 1])
         with col_excel:
@@ -705,25 +547,23 @@ def exibir_lancamentos():
                 st.download_button(
                     label="📥 Exportar para Excel (Vazio)",
                     data=excel_buffer,
-                    file_name=f'lancamentos_{filename_suffix}_{datetime.now().strftime("%Y%m%d")}.xlsx',
+                    file_name=f'lancamentos_{datetime.now().strftime("%Y%m%d")}.xlsx',
                     mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
                 )
         with col_pdf_lista:
-             # Use a sua função original para exportar a lista vazia
-             pdf_lista_buffer = exportar_lancamentos_para_pdf([], usuario_para_pdf_title)
+             pdf_lista_buffer = exportar_lancamentos_para_pdf([]) # Passa lista vazia
              st.download_button(
                 label="📄 Exportar Lista PDF (Vazia)",
                 data=pdf_lista_buffer,
-                file_name=f'lista_lancamentos_{filename_suffix}_{datetime.now().strftime("%Y%m%d")}.pdf',
+                file_name=f'lista_lancamentos_{datetime.now().strftime("%Y%m%d")}.pdf',
                 mime='application/pdf'
              )
         with col_pdf_dr:
-             # Use a nova função para exportar a DR vazia
-             pdf_dr_buffer = gerar_demonstracao_resultados_pdf([], usuario_para_pdf_title)
+             pdf_dr_buffer = gerar_demonstracao_resultados_pdf([]) # Passa lista vazia
              st.download_button(
                 label="📊 Exportar DR PDF (Vazia)",
                 data=pdf_dr_buffer,
-                file_name=f'demonstracao_resultados_{filename_suffix}_{datetime.now().strftime("%Y%m%d")}.pdf',
+                file_name=f'demonstracao_resultados_{datetime.now().strftime("%Y%m%d")}.pdf',
                 mime='application/pdf'
              )
         st.markdown("---")
@@ -732,392 +572,160 @@ def exibir_lancamentos():
 
     # Ordenar lançamentos por data (do mais recente para o mais antigo)
     try:
-        # Usamos a lista que já foi filtrada/selecionada corretamente
+        # Usamos a lista que já contém todos os lançamentos
         lancamentos_para_exibir.sort(key=lambda x: datetime.strptime(x.get('Data', '1900-01-01'), '%Y-%m-%d'), reverse=True)
     except ValueError:
         st.warning("Não foi possível ordenar os lançamentos por data devido a formato inválido.")
 
     # --- Botões de Exportação ---
-    # Adicionamos uma terceira coluna para o novo botão da Demonstração de Resultados
-    col_excel, col_pdf_lista, col_pdf_dr = st.columns([1, 1, 1]) # Mantendo 3 colunas para os botões de exportação
+    col_excel, col_pdf_lista, col_pdf_dr = st.columns([1, 1, 1])
 
     with col_excel:
         excel_buffer = exportar_lancamentos_para_excel(lancamentos_para_exibir)
-        if excel_buffer: # Só exibe o botão se a geração do Excel for bem-sucedida
+        if excel_buffer:
             st.download_button(
                 label="📥 Exportar Lançamentos em Excel",
                 data=excel_buffer,
-                file_name=f'lancamentos_{filename_suffix}_{datetime.now().strftime("%Y%m%d")}.xlsx',
+                file_name=f'lancamentos_{datetime.now().strftime("%Y%m%d")}.xlsx',
                 mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
             )
 
     with col_pdf_lista:
-         # Botão para a sua função original de exportação (lista detalhada)
-         pdf_lista_buffer = exportar_lancamentos_para_pdf(lancamentos_para_exibir, usuario_para_pdf_title)
+         pdf_lista_buffer = exportar_lancamentos_para_pdf(lancamentos_para_exibir)
          st.download_button(
             label="📄 Exportar Lista PDF",
             data=pdf_lista_buffer,
-            file_name=f'lista_lancamentos_{filename_suffix}_{datetime.now().strftime("%Y%m%d")}.pdf',
+            file_name=f'lista_lancamentos_{datetime.now().strftime("%Y%m%d")}.pdf',
             mime='application/pdf'
          )
-
     with col_pdf_dr:
-         # Botão para a nova função de exportação da Demonstração de Resultados
-         pdf_dr_buffer = gerar_demonstracao_resultados_pdf(lancamentos_para_exibir, usuario_para_pdf_title)
+         pdf_dr_buffer = gerar_demonstracao_resultados_pdf(lancamentos_para_exibir)
          st.download_button(
             label="📊 Exportar DR PDF",
             data=pdf_dr_buffer,
-            file_name=f'demonstracao_resultados_{filename_suffix}_{datetime.now().strftime("%Y%m%d")}.pdf',
+            file_name=f'demonstracao_resultados_{datetime.now().strftime("%Y%m%d")}.pdf',
             mime='application/pdf'
          )
 
-
-    st.markdown("---")
-
-    # Preparar dados para exibição na tabela do Streamlit
-    # Remove 'user_email' para não exibir na tabela, mantendo a estrutura original
-    lancamentos_para_tabela = []
-    for l in lancamentos_para_exibir:
-         l_copy = l.copy()
-         if 'user_email' in l_copy:
-              del l_copy['user_email']
-         lancamentos_para_tabela.append(l_copy)
-
-    # Converte para DataFrame para exibição
-    df_lancamentos = pd.DataFrame(lancamentos_para_tabela)
-
-    # Formata as colunas para exibição
-    if not df_lancamentos.empty:
-         # Formata data para exibição DD/MM/AAAA
-        if 'Data' in df_lancamentos.columns:
-            try:
-                 df_lancamentos['Data'] = pd.to_datetime(df_lancamentos['Data']).dt.strftime('%d/%m/%Y')
-            except Exception as e:
-                 st.warning(f"Erro ao formatar a coluna 'Data' para exibição: {e}")
-
-        # Formata valor para R$ X.XXX,XX
-        if 'Valor' in df_lancamentos.columns:
-             try:
-                df_lancamentos['Valor'] = df_lancamentos['Valor'].apply(lambda x: f"R$ {x:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
-             except Exception as e:
-                 st.warning(f"Erro ao formatar a coluna 'Valor' para exibição: {e}")
-
-    # Exibe a tabela
-    if not df_lancamentos.empty:
-        st.dataframe(df_lancamentos, use_container_width=True, hide_index=True)
-
-        # Botões de Ação (Editar/Excluir) - Adicionado tratamento de permissão
-        st.subheader("Ações")
-        # AUMENTANDO A LARGURA DA COLUNA DE AÇÕES (último valor na lista)
-        cols_actions = st.columns([1, 1, 1]) # Colunas para Editar, Excluir, (placeholder)
-
-        # Use um formulário para lidar com as ações de editar/excluir
-        # Isso evita problemas de re-renderização com múltiplos botões
-        with st.form(key="lancamento_actions_form"):
-            st.markdown("Selecione a linha e clique em uma ação:")
-            # Seleciona a linha com um radio button ou número
-            linha_selecionada_indice = st.number_input(
-                 "Número da Linha (a partir de 1)",
-                 min_value=1,
-                 max_value=len(lancamentos_para_exibir),
-                 step=1,
-                 key="selected_row_index"
-            )
-            # Ajusta para índice base 0 para acessar a lista
-            indice_real_selecionado = linha_selecionada_indice - 1
-
-            # Verifica se a linha selecionada é válida e se o usuário tem permissão para editar/excluir
-            pode_interagir = False
-            if 0 <= indice_real_selecionado < len(lancamentos_para_exibir):
-                 lancamento_selecionado_data = lancamentos_para_exibir[indice_real_selecionado]
-                 is_owner = lancamento_selecionado_data.get('user_email') == st.session_state.get('usuario_atual_email')
-                 is_admin = st.session_state.get('tipo_usuario_atual') == 'Administrador'
-                 if is_owner or is_admin:
-                      pode_interagir = True
-                 else:
-                     st.warning(f"Você não tem permissão para interagir com o lançamento na linha {linha_selecionada_indice}.")
+    st.markdown("---") # Separador
 
 
-            col_editar, col_excluir = st.columns(2) # Duas colunas dentro do formulário
+    # --- Exibir Lançamentos em Tabela ---
+    # Prepare a lista de lançamentos para exibição na tabela
+    dados_para_tabela = []
+    for i, lancamento in enumerate(lancamentos_para_exibir):
+        # Cria uma cópia para não modificar o dicionário original na lista session_state
+        lancamento_copy = lancamento.copy()
 
-            with col_editar:
-                 edit_button = st.form_submit_button("✏️ Editar Lançamento", disabled=not pode_interagir)
-            with col_excluir:
-                 # Adicionado kind="secondary" para o estilo CSS de exclusão (ver CSS no início)
-                 delete_button = st.form_submit_button("🗑️ Excluir Lançamento", disabled=not pode_interagir, kind="secondary")
+        # Adiciona colunas de ação (usando key baseada no índice para unicidade)
+        # As ações reais serão botões abaixo da tabela, mas mantemos a coluna para consistência visual se necessário
+        # lancamento_copy['Ações'] = "" # Coluna vazia na exibição da tabela
 
+        # Formata a data para exibição
+        try:
+            lancamento_copy['Data'] = datetime.strptime(lancamento_copy.get("Data", '1900-01-01'), "%Y-%m-%d").strftime("%d/%m/%Y")
+        except ValueError:
+            lancamento_copy['Data'] = lancamento_copy.get("Data", "Data Inválida") # Mantém o valor original se o formato for inválido
 
-            # --- Lógica de Ações (dentro do formulário) ---
-            if edit_button and pode_interagir:
-                # Define variáveis de estado para mostrar o modal de edição
-                st.session_state['show_edit_modal'] = True
-                st.session_state['editar_indice'] = indice_real_selecionado
-                # Salva os dados atuais do lançamento no estado para preencher o formulário de edição
-                st.session_state['editar_lancamento'] = lancamentos_para_exibir[indice_real_selecionado]
-                st.rerun()
+        # Formata o valor para exibição
+        lancamento_copy['Valor'] = f"R$ {lancamento_copy.get('Valor', 0.0):.2f}".replace('.', ',')
 
-            if delete_button and pode_interagir:
-                # Remove o lançamento da lista no estado da sessão
-                del st.session_state["lancamentos"][indice_real_selecionado]
-                salvar_lancamentos()
-                st.success(f"Lançamento da linha {linha_selecionada_indice} excluído com sucesso!")
-                st.rerun()
+        # Remove a coluna 'user_email' da exibição se ela existir
+        if 'user_email' in lancamento_copy:
+             del lancamento_copy['user_email']
 
-    st.markdown("---") # Separador visual
+        dados_para_tabela.append(lancamento_copy)
 
-# --- FUNÇÃO para a página de Gestão de Usuários (Apenas para Admin) ---
-# --- MODIFICADA para gerenciar a lista hardcoded no estado da sessão ---
-def pagina_gestao_usuarios():
-    if st.session_state.get('tipo_usuario_atual') != 'Administrador':
-        st.error("Você não tem permissão para acessar esta página.")
-        return
+    # Converte a lista para DataFrame para exibição
+    df_exibicao = pd.DataFrame(dados_para_tabela)
 
-    st.title("Gestão de Usuários (Admin)")
-    st.warning("A gestão de usuários é apenas para esta sessão, pois os usuários são hardcoded. Ao reiniciar o script, a lista hardcoded original será restaurada.")
-
-    # Exibir lista de usuários
-    st.subheader("Lista de Usuários")
-    usuarios_df = pd.DataFrame(st.session_state.get('usuarios', []))
-
-    # Oculta a coluna de senha por segurança (mesmo que hardcoded)
-    if not usuarios_df.empty:
-        # Mantém a coluna 'Senha' presente no DataFrame, mas a oculta na exibição
-        # para que a lógica de exclusão/edição por índice funcione com o DataFrame subjacente
-        column_config = {"Senha": st.column_config.Column(disabled=True, width="small")} # Oculta a coluna Senha
-        # Remove 'categorias_receita' da exibição para simplificar
-        if 'categorias_receita' in usuarios_df.columns:
-             column_config['categorias_receita'] = st.column_config.Column(disabled=True, width="small")
-
-        st.dataframe(usuarios_df, use_container_width=True, hide_index=False, column_config=column_config) # Exibe o índice
-
-        # --- Ações de Usuário (Editar/Excluir) ---
-        st.subheader("Ações de Usuário")
-        # Formulário para ações de usuário
-        with st.form(key="user_actions_form"):
-            st.markdown("Selecione o Índice do Usuário (coluna 0 na tabela) e clique em uma ação:")
-            user_index_input = st.number_input(
-                "Índice do Usuário",
-                min_value=0,
-                max_value=len(st.session_state.get('usuarios', [])) - 1,
-                step=1,
-                format="%d", # Garante que seja exibido como inteiro
-                key="selected_user_index_input"
-            )
-
-            col_editar_user, col_excluir_user = st.columns(2)
-
-            with col_editar_user:
-                edit_user_button = st.form_submit_button("✏️ Editar Usuário")
-            with col_excluir_user:
-                 # Adicionado kind="secondary" para o estilo CSS de exclusão
-                delete_user_button = st.form_submit_button("🗑️ Excluir Usuário", kind="secondary")
+    # Define as colunas a serem exibidas e a ordem (removendo a coluna "Ações" da tabela)
+    colunas_exibicao = ["Data", "Descrição", "Categorias", "Tipo de Lançamento", "Valor"]
+    # Verifica se as colunas existem antes de selecioná-las
+    colunas_validas = [col for col in colunas_exibicao if col in df_exibicao.columns]
+    df_exibicao = df_exibicao[colunas_validas]
 
 
-            # Lógica de Ações de Usuário (dentro do formulário)
-            if edit_user_button:
-                 if 0 <= user_index_input < len(st.session_state.get('usuarios', [])):
-                      st.session_state['show_edit_modal_user'] = True
-                      st.session_state['editar_usuario_index'] = user_index_input
-                      # Copia os dados para o estado para o formulário de edição
-                      st.session_state['editar_usuario_data'] = st.session_state['usuarios'][user_index_input].copy()
-                      st.rerun()
-                 else:
-                      st.error("Índice de usuário inválido.")
+    # Exibe a tabela interativa
+    st.dataframe(
+        df_exibicao,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Data": st.column_config.TextColumn("Data"),
+            "Descrição": st.column_config.TextColumn("Descrição"),
+            "Categorias": st.column_config.TextColumn("Categoria"),
+            "Tipo de Lançamento": st.column_config.TextColumn("Tipo"),
+            "Valor": st.column_config.TextColumn("Valor"),
+        }
+    )
 
-            if delete_user_button:
-                 # Chama a função de exclusão modificada
-                 if 0 <= user_index_input < len(st.session_state.get('usuarios', [])):
-                    excluir_usuario(user_index_input)
-                 else:
-                    st.error("Índice de usuário inválido.")
+    # --- Botões de Ação (Editar/Excluir) Abaixo da Tabela ---
+    st.subheader("Ações nos Lançamentos")
 
+    # Usa colunas para alinhar os botões de ação ao lado de cada item da tabela
+    # Ajuste o número de colunas se a tabela tiver muitos itens para evitar quebra de linha excessiva
+    num_lancamentos = len(lancamentos_para_exibir)
+    if num_lancamentos > 0:
+        # Define o número de colunas para os botões de ação.
+        # Pode ajustar este valor (ex: 5, 10, 20) dependendo de quantos botões cabem em uma linha.
+        cols_por_linha = 5
+        num_linhas_botoes = (num_lancamentos + cols_por_linha - 1) // cols_por_linha
 
-    # --- Formulário de Adição de Usuário (fora das ações de tabela) ---
-    st.subheader("Adicionar Novo Usuário")
-    # Usa um formulário separado para adição
-    with st.form(key="add_user_form"):
-        novo_nome = st.text_input("Nome do Novo Usuário", key="add_user_nome")
-        novo_email = st.text_input("E-mail do Novo Usuário", key="add_user_email")
-        novo_senha = st.text_input("Senha do Novo Usuário", type="password", key="add_user_senha") # NUNCA FAÇA ISSO!
-        novo_tipo = st.selectbox("Tipo de Usuário", ["Cliente", "Administrador"], key="add_user_tipo")
-        # Campo para categorias de receita (opcional, texto separado por vírgulas)
-        novo_categorias_receita_str = st.text_input("Categorias de Receita (separar por vírgula, ex: Vendas,Serviços)", key="add_user_categorias_receita")
+        for linha in range(num_linhas_botoes):
+             cols_acoes = st.columns(cols_por_linha)
+             for i in range(cols_por_linha):
+                 idx_global = linha * cols_por_linha + i
+                 if idx_global < num_lancamentos:
+                     # Obtenha o lançamento original da lista ordenada para saber seu índice real
+                     lancamento_original = lancamentos_para_exibir[idx_global]
+                     # Encontra o índice original na lista session_state['lancamentos'] (sem ordenação)
+                     try:
+                          indice_original = st.session_state['lancamentos'].index(lancamento_original)
+                     except ValueError:
+                          continue # Pula se o lançamento não for encontrado (improvável)
 
+                     with cols_acoes[i]:
+                        # Botão Editar
+                        if st.button("Editar", key=f"btn_editar_{indice_original}", help=f"Editar lançamento: {lancamento_original.get('Descrição', '')}"):
+                            st.session_state['editar_indice'] = indice_original
+                            # Copia o lançamento para um estado temporário para preencher o formulário
+                            st.session_state['editar_lancamento'] = st.session_state['lancamentos'][indice_original].copy()
+                            st.session_state['show_edit_modal'] = True
+                            st.session_state['show_add_modal'] = False # Garante que o outro modal esteja fechado
+                            st.rerun()
 
-        add_user_button = st.form_submit_button("Adicionar Usuário")
-
-        if add_user_button:
-            if novo_nome and novo_email and novo_senha and novo_tipo:
-                # Verifica se o email já existe
-                email_existente = any(u['Email'] == novo_email for u in st.session_state.get('usuarios', []))
-                if email_existente:
-                    st.warning(f"O e-mail '{novo_email}' já está em uso.")
-                else:
-                    # Processa as categorias de receita
-                    categorias_list = [cat.strip() for cat in novo_categorias_receita_str.split(',') if cat.strip()]
-
-                    novo_usuario = {
-                        # Gere um ID simples (incrementando do último, ou use um UUID real)
-                        "ID": len(st.session_state.get('usuarios', [])) + 1,
-                        "Nome": novo_nome,
-                        "Email": novo_email,
-                        "Senha": novo_senha, # NUNCA FAÇA ISSO!
-                        "Tipo": novo_tipo,
-                        "categorias_receita": categorias_list # Salva como lista
-                    }
-                    # Adiciona à lista hardcoded no estado da sessão
-                    st.session_state['usuarios'].append(novo_usuario)
-                    # Como os usuários são hardcoded, não há arquivo JSON para salvar.
-                    st.success("Usuário adicionado à lista (apenas para esta sessão). Usuários hardcoded retornarão ao reiniciar o script.")
-                    st.rerun()
-            else:
-                st.warning("Por favor, preencha todos os campos para adicionar um usuário.")
-
-    # --- Modal de Edição de Usuário (usando expander ou placeholder/modal) ---
-    # Simulação de modal com expander
-    # Verifica se o estado indica que o modal de edição deve ser exibido para um usuário
-    if st.session_state.get('show_edit_modal_user') and st.session_state.get('editar_usuario_index') is not None:
-        editar_idx = st.session_state['editar_usuario_index']
-        usuario_a_editar = st.session_state['editar_usuario_data'] # Use a cópia no estado
-
-        if usuario_a_editar:
-            with st.expander(f"Editar Usuário: {usuario_a_editar.get('Nome')}", expanded=True):
-                 # Formulário para edição
-                 with st.form(key=f"edit_user_form_{editar_idx}"):
-                    edited_nome = st.text_input("Nome", value=usuario_a_editar.get("Nome", ""), key=f"edit_user_nome_{editar_idx}")
-                    edited_email = st.text_input("E-mail", value=usuario_a_editar.get("Email", ""), key=f"edit_user_email_{editar_idx}")
-                    # Cuidado: Editar senha assim não é seguro. Deveria ser um campo separado para redefinir senha.
-                    # Mantendo a estrutura original, mas com ressalva.
-                    edited_senha = st.text_input("Senha", value=usuario_a_editar.get("Senha", ""), type="password", key=f"edit_user_senha_{editar_idx}") # NUNCA FAÇA ISSO!
-                    edited_tipo = st.selectbox(
-                        "Tipo de Usuário",
-                        ["Cliente", "Administrador"],
-                        index=["Cliente", "Administrador"].index(usuario_a_editar.get("Tipo", "Cliente")),
-                        key=f"edit_user_tipo_{editar_idx}"
-                    )
-                    # Edição de categorias de receita (converte lista para string)
-                    categorias_str_initial = ", ".join(usuario_a_editar.get('categorias_receita', []))
-                    edited_categorias_receita_str = st.text_input(
-                        "Categorias de Receita (separar por vírgula)",
-                        value=categorias_str_initial,
-                        key=f"edit_user_categorias_receita_{editar_idx}"
-                    )
+                        # Botão Excluir
+                        if st.button("Excluir", key=f"btn_excluir_{indice_original}", help=f"Excluir lançamento: {lancamento_original.get('Descrição', '')}", type="secondary"):
+                            del st.session_state['lancamentos'][indice_original]
+                            salvar_lancamentos()
+                            st.success("Lançamento excluído com sucesso!")
+                            st.session_state['editar_indice'] = None # Limpa o estado de edição se estiver ativo para este item
+                            st.session_state['editar_lancamento'] = None
+                            st.rerun()
 
 
-                    col_save_user, col_cancel_user = st.columns(2)
-                    with col_save_user:
-                         save_user_button = st.form_submit_button("Salvar Alterações")
-                    with col_cancel_user:
-                         cancel_edit_user_button = st.form_submit_button("Cancelar")
+# --- Layout da Aplicação Principal (Dashboard) ---
+def main():
+    """Função principal que renderiza o dashboard."""
+    st.title("Sistema de Lançamentos Financeiros")
 
-                    if save_user_button:
-                         if edited_nome and edited_email and edited_senha and edited_tipo:
-                              # Verifica se o email editado já existe para OUTRO usuário
-                              email_existente_outro = any(
-                                  u['Email'] == edited_email for i, u in enumerate(st.session_state.get('usuarios', [])) if i != editar_idx
-                              )
-                              if email_existente_outro:
-                                  st.warning(f"O e-mail '{edited_email}' já está em uso por outro usuário.")
-                              else:
-                                  # Processa as categorias de receita editadas
-                                  edited_categorias_list = [cat.strip() for cat in edited_categorias_receita_str.split(',') if cat.strip()]
-
-                                  # Atualiza o usuário na lista hardcoded no estado da sessão
-                                  st.session_state['usuarios'][editar_idx] = {
-                                      "ID": usuario_a_editar.get("ID"), # Mantém o ID original
-                                      "Nome": edited_nome,
-                                      "Email": edited_email,
-                                      "Senha": edited_senha, # NUNCA FAÇA ISSO!
-                                      "Tipo": edited_tipo,
-                                      "categorias_receita": edited_categorias_list
-                                  }
-                                  # Como os usuários são hardcoded, não há arquivo JSON para salvar.
-                                  st.success("Usuário atualizado na lista (apenas para esta sessão). Usuários hardcoded retornarão ao reiniciar o script.")
-
-                                  # Se o usuário editado for o usuário logado, atualiza as info de sessão
-                                  if st.session_state.get('usuario_atual_index') == editar_idx:
-                                        st.session_state['usuario_atual_email'] = edited_email
-                                        st.session_state['usuario_atual_nome'] = edited_nome
-                                        st.session_state['tipo_usuario_atual'] = edited_tipo
-                                        # Atualiza as categorias de receita do usuário logado
-                                        todas_unicas_receita = list(dict.fromkeys(CATEGORIAS_PADRAO_RECEITA + edited_categorias_list))
-                                        st.session_state['todas_categorias_receita'] = todas_unicas_receita
-
-
-                                  st.session_state['show_edit_modal_user'] = False
-                                  st.session_state['editar_usuario_index'] = None
-                                  st.session_state['editar_usuario_data'] = None
-                                  st.rerun()
-                         else:
-                             st.warning("Por favor, preencha todos os campos para editar o usuário.")
-
-                    if cancel_edit_user_button:
-                         st.session_state['show_edit_modal_user'] = False
-                         st.session_state['editar_usuario_index'] = None
-                         st.session_state['editar_usuario_data'] = None
-                         st.rerun()
-
-
-# --- Navegação e Renderização de Páginas ---
-
-def renderizar_pagina():
-    if not st.session_state.get('autenticado'):
-        pagina_login()
+    # Controla a exibição dos formulários de Adicionar ou Editar
+    if st.session_state.get('show_add_modal', False):
+         render_add_lancamento_form()
+    elif st.session_state.get('show_edit_modal', False):
+         render_edit_lancamento_form()
     else:
-        # Adiciona botões de navegação
-        col1, col2, col3 = st.columns([1, 1, 1])
-        with col1:
-            if st.button("Dashboard"):
-                st.session_state['pagina_atual'] = 'dashboard'
-                st.rerun()
-        with col2:
-            # Botão de Gestão de Usuários apenas para Admin
-            if st.session_state.get('tipo_usuario_atual') == 'Administrador':
-                if st.button("Gerenciar Usuários"):
-                    st.session_state['pagina_atual'] = 'gerenciar_usuarios'
-                    # Fecha modais de lancamento ao navegar
-                    st.session_state['show_add_modal'] = False
-                    st.session_state['show_edit_modal'] = False
-                    st.rerun()
-        with col3:
-            if st.button("Sair"):
-                # Reseta o estado de autenticação e variáveis de usuário
-                st.session_state['autenticado'] = False
-                st.session_state['usuario_atual_email'] = None
-                st.session_state['usuario_atual_nome'] = None
-                st.session_state['tipo_usuario_atual'] = None
-                st.session_state['usuario_atual_index'] = None
-                st.session_state['todas_categorias_receita'] = CATEGORIAS_PADRAO_RECEITA.copy() # Reseta categorias
-                # Fecha modais ao sair
-                st.session_state['show_add_modal'] = False
-                st.session_state['show_edit_modal'] = False
-                st.session_state['show_edit_modal_user'] = False # Fecha modal de usuário também
-                st.session_state['editar_usuario_index'] = None
-                st.session_state['editar_usuario_data'] = None
-                st.rerun()
+        # Se nenhum formulário estiver aberto, exibe o botão para adicionar e as outras seções
+        if st.button("Adicionar Novo Lançamento"):
+             st.session_state['show_add_modal'] = True
+             st.session_state['show_edit_modal'] = False # Ensure edit is closed
+             st.rerun()
 
-        st.markdown("---") # Separador
-
-        # Renderiza a página selecionada
-        if st.session_state['pagina_atual'] == 'dashboard':
-            st.title("Dashboard Financeiro")
-            exibir_resumo_central()
-            # Só renderiza os formulários de lançamento se não houver modais de edição/adição ativos
-            if not st.session_state.get('show_add_modal') and not st.session_state.get('show_edit_modal'):
-                 # Botão para abrir o formulário de adicionar lançamento
-                 if st.button("➕ Adicionar Lançamento"):
-                      st.session_state['show_add_modal'] = True
-                      st.session_state['editar_indice'] = None # Garante que o modal de edição está fechado
-                      st.rerun()
-                 exibir_lancamentos()
-            elif st.session_state.get('show_add_modal'):
-                 render_add_lancamento_form() # Renderiza o formulário de adição
-            elif st.session_state.get('show_edit_modal'):
-                 render_edit_lancamento_form() # Renderiza o formulário de edição
-
-        elif st.session_state['pagina_atual'] == 'gerenciar_usuarios':
-             pagina_gestao_usuarios() # Renderiza a página de gestão de usuários
+        exibir_resumo_central()
+        exibir_lancamentos()
 
 
-# --- Execução Principal ---
-renderizar_pagina()
+# --- Execução da Aplicação ---
+if __name__ == "__main__":
+    main()
