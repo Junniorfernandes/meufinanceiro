@@ -501,7 +501,7 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
 
         pdf.ln()
 
-        # Adiciona assinatura no final do PDF de lançamentos
+        # Adiciona assinaturas no final do PDF de lançamentos
         y_atual = pdf.get_y()
         pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
         pdf.ln(5)
