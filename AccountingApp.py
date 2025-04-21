@@ -376,7 +376,7 @@ def exibir_resumo_central():
             l for l in st.session_state.get("lancamentos", [])
             if l.get('user_email') == usuario_email
         ]
-        st.info(f"Exibindo seus lançamentos, {st.session_state.get('usuario_atual_nome', 'usuário')} (Client view).")
+        st.info(f"Exibindo seus lançamentos, {st.session_state.get('usuario_atual_nome', 'usuário')}.")
 
 
     total_receitas = 0
