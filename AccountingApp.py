@@ -1125,7 +1125,7 @@ elif st.session_state['pagina_atual'] == 'cadastro':
     st.rerun()
 elif st.session_state['pagina_atual'] == 'gerenciar_usuarios':
      pagina_gerenciar_usuarios() # Nova página para gerenciar usuários (inclui cadastro/exibição)
-elif st.session_state['pagina_atual'] == 'gerenciar_categorias_receita']:
+elif st.session_state['pagina_atual'] == 'gerenciar_categorias_receita':
      gerenciar_categorias_receita() # Nova página para gerenciar categorias de receita
 elif st.session_state['pagina_atual'] == 'logout':
     st.session_state['autenticado'] = False
