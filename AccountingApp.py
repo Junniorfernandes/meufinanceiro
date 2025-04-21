@@ -625,7 +625,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     return io.BytesIO(pdf_output)
 
 
-# --- FUNÇÃO DE EXIBIÇÃO DE LANÇAMENTOS CORRIGIDA NOVAMENTE ---
+# --- FUNÇÃO DE EXIBIÇÃO DE LANÇAMENTOS MODIFICADA PARA TENTAR ALINHAR BOTÕES ---
 def exibir_lancamentos():
     st.subheader("Lançamentos")
 
@@ -821,9 +821,8 @@ def exibir_lancamentos():
             df_exibicao = df_exibicao.drop(columns=['user_email'])
 
 
-        # Adiciona colunas para as ações (Editar e Excluir) no DataFrame de exibição
-        # A largura da coluna 'Ações' foi aumentada
-        df_exibicao['Ações'] = "" # Coluna placeholder para os botões
+        # Adiciona coluna placeholder para as ações
+        df_exibicao['Ações'] = ""
 
 
         # Exibe a tabela, escondendo a coluna temporária '_original_index'
@@ -842,32 +841,38 @@ def exibir_lancamentos():
             use_container_width=True
         )
 
-        # Adicionar botões de ação abaixo da tabela, referenciando a linha correta
+        # --- ADICIONAR BOTÕES DE AÇÃO ALINHADOS COM A COLUNA 'AÇÕES' ---
+        # Cria um contêiner para os botões de ação de cada linha
+        button_container = st.container()
+
+        # Usa colunas para tentar alinhar com as colunas da tabela
+        # O número de colunas criadas deve ser igual ao número de colunas visíveis na tabela (6 neste caso)
+        # As larguras podem precisar de ajuste manual para melhor alinhamento visual
+        col_widths = [55, 190, 110, 90, 80, 100] # Estimativa de larguras para 6 colunas
+
         for index, row in df_exibicao.iterrows():
-            # --- OBTÉM O ÍNDICE ORIGINAL DIRETAMENTE DA LINHA ---
-            # Este índice foi incluído ao preparar os dados para exibição
             original_index = row['_original_index']
 
-            col1, col2, col3 = st.columns([1, 1, 8]) # Colunas para alinhar os botões
+            # Cria as colunas para esta linha de botões
+            cols = button_container.columns(col_widths) # Use as larguras estimadas
 
-            with col1:
-                # Botão Editar - Usa on_click para definir o estado de solicitação de edição
-                # Passa o original_index obtido diretamente da linha
-                st.button(
-                    "✏️ Editar",
-                    key=f"edit_lancamento_{original_index}",
-                    on_click=lambda idx=original_index: st.session_state.update(edit_requested_index=idx)
-                )
-            with col2:
-                # Botão Excluir - Usa on_click para definir o estado de espera por confirmação
-                # Passa o original_index obtido diretamente da linha
-                # --- CORREÇÃO AQUI: Removido kind="secondary" ---
-                st.button(
-                    "🗑️ Excluir",
-                    key=f"delete_lancamento_{original_index}",
-                    on_click=lambda idx=original_index: st.session_state.update(awaiting_delete_confirmation_index=idx)
-                )
-            # A terceira coluna ([8]) permanece vazia para ocupar espaço
+            # Coloca os botões nas colunas correspondentes à coluna 'Ações' (última coluna)
+            # Precisamos de sub-colunas dentro da última coluna para colocar 2 botões lado a lado
+            with cols[-1]: # Acessa a última coluna
+                 col_edit, col_delete = st.columns(2) # Cria 2 sub-colunas dentro da última coluna
+
+                 with col_edit:
+                     st.button(
+                         "✏️ Editar",
+                         key=f"edit_lancamento_{original_index}",
+                         on_click=lambda idx=original_index: st.session_state.update(edit_requested_index=idx)
+                     )
+                 with col_delete:
+                     st.button(
+                         "🗑️ Excluir",
+                         key=f"delete_lancamento_{original_index}",
+                         on_click=lambda idx=original_index: st.session_state.update(awaiting_delete_confirmation_index=idx)
+                     )
 
 
 def pagina_cadastro():
@@ -956,7 +961,7 @@ def pagina_cadastro():
                     # Botão Excluir para cada usuário
                     # Adicionado kind="secondary" para aplicar o estilo CSS de exclusão
                     # Adapte a lógica de exclusão de usuário se precisar de confirmação também
-                    # --- CORREÇÃO AQUI: Removido kind="secondary" do botão de excluir usuário ---
+                    # --- CORREÇÃO ANTERIOR: Removido kind="secondary" do botão de excluir usuário ---
                     if st.button("🗑️ Excluir", key=f"delete_usuario_{index}"):
                          # Confirmação antes de excluir (opcional, mas recomendado)
                          # Nota: A lógica de confirmação de usuário aqui é a original e pode ser adaptada
@@ -1078,10 +1083,10 @@ def gerenciar_categorias_receita():
 def pagina_gerenciar_usuarios():
     st.title("Gerenciar Usuários")
 
-    # Verifica se o usuário logado é Administrador
+    # Verifica si el usuario logueado es Administrador
     if st.session_state.get('tipo_usuario_atual') != 'Administrador':
-        st.warning("Você não tem permissão para acessar esta página.")
-        st.session_state['pagina_atual'] = 'dashboard' # Redireciona se não for admin
+        st.warning("Usted no tiene permiso para acceder a esta página.")
+        st.session_state['pagina_atual'] = 'dashboard' # Redirecciona si no es admin
         st.rerun()
         return
 
@@ -1123,10 +1128,10 @@ elif st.session_state['pagina_atual'] == 'cadastro':
     st.warning("Página de Cadastro acessada diretamente. Redirecionando para Gerenciar Usuários.")
     st.session_state['pagina_atual'] = 'gerenciar_usuarios'
     st.rerun()
-elif st.session_state['pagina_atual'] == 'gerenciar_usuarios':
-     pagina_gerenciar_usuarios() # Nova página para gerenciar usuários (inclui cadastro/exibição)
 elif st.session_state['pagina_atual'] == 'gerenciar_categorias_receita':
      gerenciar_categorias_receita() # Nova página para gerenciar categorias de receita
+elif st.session_state['pagina_atual'] == 'gerenciar_usuarios':
+     pagina_gerenciar_usuarios() # Nova página para gerenciar usuários (inclui cadastro/exibição)
 elif st.session_state['pagina_atual'] == 'logout':
     st.session_state['autenticado'] = False
     st.session_state['usuario_atual_email'] = None
