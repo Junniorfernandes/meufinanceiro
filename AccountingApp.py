@@ -838,8 +838,8 @@ def pagina_configuracoes():
                     st.session_state['usuarios'][usuario_logado_index]['Senha'] = nova_senha_propria
                     
                     # SALVA SIGNATÁRIO
-st.session_state['usuarios'][usuario_logado_index]['SignatarioNome'] = signatario_nome
-st.session_state['usuarios'][usuario_logado_index]['SignatarioCargo'] = signatario_cargo
+                st.session_state['usuarios'][usuario_logado_index]['SignatarioNome'] = signatario_nome
+                st.session_state['usuarios'][usuario_logado_index]['SignatarioCargo'] = signatario_cargo
 
                 salvar_usuarios()
                 st.success("Perfil atualizado com sucesso!")
