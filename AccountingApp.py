@@ -500,18 +500,6 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
         pdf.cell(col_widths[4], 10, valor_formatado.encode('latin1', 'replace').decode('latin1'), 1, 0, 'R')
 
         pdf.ln()
-        
-        # Assinaturas em PDF
-        signatario_nome = st.session_state.get('usuarios', [])[st.session_state.get('usuario_atual_index', 0)].get("SignatarioNome", "")
-        signatario_cargo = st.session_state.get('usuarios', [])[st.session_state.get('usuario_atual_index', 0)].get("SignatarioCargo", "")
-
-        if signatario_nome or signatario_cargo:
-           pdf.set_font("Arial", '', 10)
-           pdf.cell(0, 10, "Assinado por:", 0, 1, 'L')
-           if signatario_nome:
-              pdf.cell(0, 8, signatario_nome.encode('latin1', 'replace').decode('latin1'), 0, 1, 'L')
-           if signatario_cargo:
-              pdf.cell(0, 8, signatario_cargo.encode('latin1', 'replace').decode('latin1'), 0, 1, 'L')
 
     pdf_output = pdf.output(dest='S')
     return io.BytesIO(pdf_output.encode('latin1'))
