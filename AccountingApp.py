@@ -519,6 +519,7 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
         if signatario_cargo:
             pdf.cell(0, 8, signatario_cargo, 0, 1, 'L')
 
+
     pdf_output = pdf.output(dest='S')
     return io.BytesIO(pdf_output.encode('latin1'))
 
