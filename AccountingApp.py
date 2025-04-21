@@ -53,6 +53,26 @@ def salvar_usuarios():
         json.dump(st.session_state.get('usuarios', []), f)
 
 def carregar_usuarios():
+    usuarios = [
+        {
+            "Usuario": "Junior Fernandes",
+            "email": "valmirfernandescontabilidade@gmail.com",
+            "Senha": "114316",
+            "Funcao": "Administrador"
+        },
+        {
+            "Usuario": "Junior Fernandes",
+            "email": "valmirfernandescontabilidade@gmail.com",
+            "Senha": "123456",
+            "Funcao": "Cliente"
+        },
+        {
+            "Usuario": "Camila Garcia",
+            "email": "boatardecamila@gmail.com",
+            "Senha": "123456",
+            "Funcao": "Cliente"
+        }
+    ]
     if os.path.exists(USUARIOS_FILE):
         try:
             with open(USUARIOS_FILE, "r") as f:
