@@ -984,7 +984,7 @@ def pagina_dashboard():
         st.rerun()
         return
 
-    st.title(f"Dashboard - {st.session_state.get('usuario_atual_nome', 'Usuário')}")
+    st.title(f"Controle Financeiro - {st.session_state.get('usuario_atual_nome', 'Usuário')}")
 
     exibir_resumo_central()
 
