@@ -3,5 +3,3 @@ pandas
 fpdf
 openpyxl
 streamlit-aggrid
-logo_dark
-logo_light
