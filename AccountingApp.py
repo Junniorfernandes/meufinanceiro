@@ -515,9 +515,8 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
 
         if signatario_nome:
             pdf.cell(0, 10, f"Assinado por: {signatario_nome}", 0, 1, 'C')
-            pdf.cell(0, 10, "", 0, 1)  # Adiciona 15mm de espaço vertical
-        pdf.line(50, 90, 150, 90)
-        pdf.cell(0, 10, "", 0, 1)  # Adiciona 15mm de espaço vertical
+        pdf.line(50, 100, 150, 90)
+        pdf.cell(0, 5, "", 0, 1)  # Adiciona 15mm de espaço vertical
         if signatario_cargo:
             pdf.cell(0, 8, signatario_cargo, 0, 1, 'C')
 
