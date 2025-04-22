@@ -979,9 +979,9 @@ def pagina_configuracoes():
                                                      key="edit_confirmar_minha_nova_senha")
 
         # CAMPOS DE ASSINATURA
-        signatario_nome = st.text_input("Nome do Signatário (para PDF)", usuario_logado.get('SignatarioNome', ''),
+        signatario_nome = st.text_input("Nome de quem assina os relatórios", usuario_logado.get('SignatarioNome', ''),
                                         key="signatario_nome")
-        signatario_cargo = st.text_input("Cargo do Signatário", usuario_logado.get('SignatarioCargo', ''),
+        signatario_cargo = st.text_input("Cargo de quem assina os relatórios", usuario_logado.get('SignatarioCargo', ''),
                                          key="signatario_cargo")
 
         if st.button("Salvar Alterações no Perfil"):
