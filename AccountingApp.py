@@ -634,7 +634,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
         pdf.set_font("Arial", '', 10)
         if signatario_nome:
             pdf.cell(0, 10, f"Assinado por: {signatario_nome}", 0, 1, 'C')
-        pdf.line(30, 150, 175, 150)
+        pdf.line(30, 130, 175, 130)
         pdf.cell(0, 15, "", 0, 1)  # Adiciona 15mm de espaço vertical
         if signatario_cargo:
             pdf.cell(0, 8, signatario_cargo, 0, 1, 'C')
