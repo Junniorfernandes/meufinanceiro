@@ -92,7 +92,7 @@ def carregar_usuarios():
     novo_cliente = {
         "Nome": "João Ferreira",
         "Email": "valmirfernandescontabilidade@hotmail.com",
-        "Senha": "123456,
+        "Senha": "123456",
         "Tipo": "Cliente",
         "categorias_receitas": [],
         "SignatarioNome": "",
