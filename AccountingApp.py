@@ -645,11 +645,12 @@ def criar_grafico_donut(receitas_por_categoria):
     for text in texts:
         text.set_color('black')       # Cor do texto da categoria
         text.set_fontsize(14)         # Tamanho da fonte da categoria
-
+	text.set_weight('bold')
     # Customiza o texto das porcentagens dentro do gráfico
     for autotext in autotexts:
         autotext.set_color('white')   # Cor do texto percentual
         autotext.set_fontsize(14)     # Tamanho da fonte percentual
+	autotext.set_weight('bold')
 
     plt.title('Distribuição de Receitas', fontsize=16, fontweight='bold', color='#003548')
 
