@@ -766,6 +766,9 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     	donut_path = criar_grafico_donut(receitas_por_categoria)
     	pdf.image(donut_path, x=55, y=pdf.get_y(), w=100)
     	pdf.ln(110)
+    y_atual = pdf.get_y()
+    pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
+    pdf.ln(5)
 
     # --- Comentário Analítico ---
     comentario = ""
