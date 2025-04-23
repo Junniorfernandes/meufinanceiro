@@ -264,14 +264,14 @@ def render_add_lancamento_form():
             data_str = st.text_input("Data (DD/MM/AAAA)", key="add_lanc_data_form")
             descricao = st.text_input("Descrição do lançamento", key="add_lanc_descricao_form")
             # Captura o tipo de lançamento selecionado primeiro
-            tipo = st.selectbox("Tipo de Lançamento", ["Receita/Entradas", "Despesa/Saídas"], key="add_lanc_tipo_form")
+            tipo = st.selectbox("Tipo de Lançamento", ["Receita", "Despesa"], key="add_lanc_tipo_form")
 
             # Cria um placeholder para a Categoria
             categoria_placeholder = st.empty()
 
             categorias = ""  # Inicializa a variável de categoria
             # Só exibe o campo Categoria dentro do placeholder se o tipo for Receita (conforme original)
-            if tipo == "Receita/Entradas":
+            if tipo == "Receita":
                 # Usa a lista combinada de categorias de receita do usuário logado
                 categorias_disponiveis = st.session_state.get('todas_categorias_receita', CATEGORIAS_PADRAO_RECEITA)
                 categorias = categoria_placeholder.selectbox(
