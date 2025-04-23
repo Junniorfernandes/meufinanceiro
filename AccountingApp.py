@@ -901,8 +901,8 @@ def exibir_lancamentos():
 
     if data_inicio_filtro and data_fim_filtro:
         # Converte as datas de filtro para o formato 'DD-MM-AAAA' para comparação
-        data_inicio_str = data_inicio_filtro.strftime("%Y-%m-%d")
-        data_fim_str = data_fim_filtro.strftime("%Y-%m-%d")
+        data_inicio_str = data_inicio_filtro.strftime("%d-%m-%y")
+        data_fim_str = data_fim_filtro.strftime("%d-%m-%y")
 
         lancamentos_filtrados_por_data = [
             lancamento for lancamento in lancamentos_para_exibir
