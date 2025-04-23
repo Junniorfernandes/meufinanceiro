@@ -514,8 +514,7 @@ def exportar_lancamentos_para_excel(lancamentos_list):
             del lancamento_copy['user_email']
         lancamentos_para_df.append(lancamento_copy)
 
-    colunas_ordenadas = ["Data", "Descrição", "Tipo de Lançamento", "Categorias", "Valor"]
-    df = pd.DataFrame(lancamentos_para_df, columns=colunas_ordenadas)
+    df = pd.DataFrame(lancamentos_para_df)
 
     if not df.empty:
         if 'Data' in df.columns:
