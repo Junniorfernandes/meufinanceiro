@@ -641,17 +641,20 @@ def criar_grafico_donut(receitas_por_categoria):
         colors=cores_personalizadas
     )
 
-    # Customiza o texto das labels (categorias como “Dízimos”)
+       # Customiza o texto das labels (categorias como “Dízimos”)
     for text in texts:
         text.set_color('black')       # Cor do texto da categoria
         text.set_fontsize(14)         # Tamanho da fonte da categoria
-	text.set_weight('bold')
+        text.set_weight('bold')       # ← corrigido aqui
+
     # Customiza o texto das porcentagens dentro do gráfico
     for autotext in autotexts:
         autotext.set_color('white')   # Cor do texto percentual
         autotext.set_fontsize(14)     # Tamanho da fonte percentual
-	autotext.set_weight('bold')
+        autotext.set_weight('bold')   # ← corrigido aqui
+
     plt.title('Distribuição de Receitas', fontsize=16, fontweight='bold', color='#003548')
+
 
     temp_filename = f"/tmp/donut_{uuid.uuid4().hex}.png"
     plt.savefig(temp_filename, bbox_inches='tight', transparent=True, dpi=300)
