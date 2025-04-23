@@ -631,9 +631,25 @@ def criar_grafico_donut(receitas_por_categoria):
 
     cores_personalizadas = ['#003548', '#0077b6', '#00b4d8', '#90e0ef', '#caf0f8']
 
-    plt.pie(values, labels=labels, autopct='%1.1f%%', pctdistance=0.85,
-            wedgeprops=dict(width=0.5),
-            colors=cores_personalizadas)
+    # Cria o gráfico e captura os textos de label e autopct
+    wedges, texts, autotexts = plt.pie(
+        values,
+        labels=labels,
+        autopct='%1.1f%%',
+        pctdistance=0.85,
+        wedgeprops=dict(width=0.5),
+        colors=cores_personalizadas
+    )
+
+    # Customiza o texto das labels (categorias como “Dízimos”)
+    for text in texts:
+        text.set_color('black')       # Cor do texto da categoria
+        text.set_fontsize(12)         # Tamanho da fonte da categoria
+
+    # Customiza o texto das porcentagens dentro do gráfico
+    for autotext in autotexts:
+        autotext.set_color('white')   # Cor do texto percentual
+        autotext.set_fontsize(12)     # Tamanho da fonte percentual
 
     plt.title('Distribuição de Receitas por Categoria', fontsize=14, fontweight='bold', color='#003548')
 
@@ -642,7 +658,6 @@ def criar_grafico_donut(receitas_por_categoria):
     plt.close()
 
     return temp_filename
-
 
 # --- FUNÇÃO para gerar a Demonstração de Resultados em PDF ---
 def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário"):
