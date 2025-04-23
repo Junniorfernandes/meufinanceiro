@@ -3,4 +3,3 @@ pandas
 fpdf
 openpyxl
 streamlit-aggrid
-matplotlib.pyplot
