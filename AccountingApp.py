@@ -568,7 +568,7 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
 
     # Usa a fonte com suporte a acentos (se carregada) ou a padrão para os cabeçalhos e dados da tabela
     pdf.set_font(font_for_table, 'B', 10)  # Cabeçalhos em negrito
-    col_widths = [20, 50, 30, 20, 20]
+    col_widths = [20, 80, 30, 20, 20]
     headers = ["Data", "Descrição", "Categoria", "Tipo", "Valor"]
 
     for i, header in enumerate(headers):
