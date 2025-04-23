@@ -946,8 +946,8 @@ def exibir_lancamentos():
 
         col1.write(data_formatada)
         col2.write(lancamento.get("Descrição", ""))
-        col3.write(lancamento.get("Categorias", ""))
-        col4.write(lancamento.get("Tipo de Lançamento", ""))
+        col3.write(lancamento.get("Tipo de Lançamento", ""))
+        col4.write(lancamento.get("Categorias", ""))
         col5.write(f"R$ {lancamento.get('Valor', 0.0):.2f}")
 
         with col6:
