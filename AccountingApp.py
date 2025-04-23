@@ -3,6 +3,7 @@ from datetime import datetime
 import json
 import os
 import pandas as pd
+import matplotlib.pyplot as plt
 import io
 from fpdf import FPDF
 
@@ -619,6 +620,29 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
     pdf_output = pdf.output(dest='S')
     return io.BytesIO(pdf_output.encode('latin1')) # No Github adicionar: .encode('latin1'))
 
+#Criar gráfico de Donuts
+
+def criar_grafico_donut(receitas_por_categoria):
+    # Criar figura com fundo transparente
+    plt.figure(figsize=(8, 8), facecolor='none')
+
+    # Dados para o gráfico
+    labels = list(receitas_por_categoria.keys())
+    values = list(receitas_por_categoria.values())
+
+    # Criar gráfico de donut
+    plt.pie(values, labels=labels, autopct='%1.1f%%', pctdistance=0.85,
+            wedgeprops=dict(width=0.5))
+
+    plt.title('Distribuição de Receitas por Categoria')
+
+    # Salvar o gráfico em um buffer
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', bbox_inches='tight', transparent=True, dpi=300)
+    buf.seek(0)
+    plt.close()
+
+    return buf
 
 # --- FUNÇÃO para gerar a Demonstração de Resultados em PDF ---
 def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário"):
@@ -664,7 +688,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
                 despesas_por_categoria[categoria] = 0
             despesas_por_categoria[categoria] += valor
             total_despesas += valor
-
+    
     # --- Adicionar Receitas ao PDF ---
     pdf.set_font(font_for_text, 'B', 12)  # Título da seção em negrito
     pdf.cell(0, 10, "Receitas".encode('latin1', 'replace').decode('latin1'), 0, 1, 'L')
@@ -682,6 +706,13 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     pdf.cell(100, 7, "Total Receitas".encode('latin1', 'replace').decode('latin1'), 0, 0, 'L')
     pdf.cell(0, 7, f"R$ {total_receitas:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
     pdf.ln(10)  # Espaço após a seção de Receitas
+
+    # --- Gráfico de Donut de Receitas ---
+    if receitas_por_categoria:
+    grafico_buffer = criar_grafico_donut(receitas_por_categoria)
+    pdf.image(grafico_buffer, x=55, y=pdf.get_y(), w=100)  # Centraliza aproximadamente
+    pdf.ln(110)  # Espaço após o gráfico
+	
 
     # --- Adicionar Despesas ao PDF ---
     pdf.set_font(font_for_text, 'B', 12)  # Título da seção em negrito
