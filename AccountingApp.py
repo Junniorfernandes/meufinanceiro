@@ -273,7 +273,7 @@ def render_add_lancamento_form():
                 # Usa a lista combinada de categorias de receita do usuário logado
                 categorias_disponiveis = st.session_state.get('todas_categorias_receita', CATEGORIAS_PADRAO_RECEITA)
                 categorias = categoria_placeholder.selectbox(
-                    "Categoria",
+                    "Categoria de Receitas",
                     categorias_disponiveis,
                     key="add_lanc_categoria_receita_form"
                 )
