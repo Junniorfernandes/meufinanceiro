@@ -800,6 +800,42 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
     pdf.ln(5)
 
+# --- Adicionar Gráfico de Barras Comparando Receitas e Despesas no PDF ---
+    if total_receitas > 0 or total_despesas > 0: # Só gera o gráfico se houver dados
+        plt.figure(figsize=(6, 4), facecolor='none') # Fundo transparente
+        labels = ['Receitas', 'Despesas']
+        values = [total_receitas, total_despesas]
+        colors = ['blue', 'red']
+
+        bar_fig, ax = plt.subplots(figsize=(6, 4))
+        bars = ax.bar(labels, values, color=colors)
+
+        # Adicionar os valores nas barras
+        for bar in bars:
+            yval = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2.0, yval, f'R$ {yval:.2f}'.replace('.', ','), va='bottom', ha='center', fontsize=10)
+
+        ax.set_ylabel('Valor (R$)')
+        ax.set_title('Comparativo de Receitas e Despesas')
+        plt.tight_layout() # Ajusta o layout para evitar cortes
+
+        # Salvar gráfico temporariamente
+        bar_temp_filename = f"/tmp/bar_{uuid.uuid4().hex}.png"
+        plt.savefig(bar_temp_filename, bbox_inches='tight', transparent=True, dpi=300)
+        plt.close(bar_fig)
+
+        # Adicionar o gráfico de barras ao PDF
+        pdf.ln(10) # Adiciona espaço antes do gráfico
+        pdf.set_font(font_for_text, 'B', 12) # Título opcional para o gráfico
+        pdf.cell(0, 10, "Gráfico Comparativo".encode('latin1', 'replace').decode('latin1'), 0, 1, 'C')
+        pdf.image(bar_temp_filename, x=55, y=pdf.get_y(), w=100) # Ajuste x e y conforme necessário
+        pdf.ln(70) # Espaço após o gráfico de barras (ajuste conforme tamanho do gráfico)
+
+        # Remover o arquivo temporário
+        import os
+        os.remove(bar_temp_filename)
+    # --- Fim do Gráfico de Barras no PDF ---
+
     # --- Gráfico de Donut de Receitas ---
     if receitas_por_categoria:
     	donut_path = criar_grafico_donut(receitas_por_categoria)
