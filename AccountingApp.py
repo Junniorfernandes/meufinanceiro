@@ -462,7 +462,6 @@ def exibir_resumo_central():
                 st.warning(f"Usuário {usuario_selecionado_nome} não encontrado para o resumo.")
                 lancamentos_para_resumo = []  # Lista vazia se o usuário não for encontrado
 
-            # --- FIM DA LÓGICA DE FILTRAGEM ---
 
     else:  # Código existente para usuários não administradores
         usuario_email = st.session_state.get('usuario_atual_email')
@@ -472,10 +471,7 @@ def exibir_resumo_central():
         ]
         st.info(f"Exibindo seus lançamentos, {st.session_state.get('usuario_atual_nome', 'usuário')}.")
 
-    total_receitas = 0
-    total_despesas = 0
-
-# --- Aplicar Filtro por Data ao Resumo ---
+    # --- Aplicar Filtro por Data ao Resumo ---
     data_inicio_filtro = st.session_state.get("data_inicio_filtro")
     data_fim_filtro = st.session_state.get("data_fim_filtro")
 
@@ -505,17 +501,20 @@ def exibir_resumo_central():
     lancamentos_para_resumo = lancamentos_para_resumo_filtrados
     # --- Fim do Filtro por Data ao Resumo ---
 
+
+    # Inicializa os totais antes do loop
+    total_receitas = 0
+    total_despesas = 0
+
     # Agora itera sobre a lista `lancamentos_para_resumo` (que agora inclui filtro por data)
     for lancamento in lancamentos_para_resumo:
-        # ... restante do cálculo do resumo
-
-    # Agora itera sobre a lista `lancamentos_para_resumo` (filtrada ou completa)
-    for lancamento in lancamentos_para_resumo:
+        # AS PRÓXIMAS DUAS CONDIÇÕES DEVEM ESTAR INDENTADAS ASSIM:
         if lancamento.get("Tipo de Lançamento") == "Receita":
             total_receitas += lancamento.get("Valor", 0)
         elif lancamento.get("Tipo de Lançamento") == "Despesa":
             total_despesas += lancamento.get("Valor", 0)
 
+    # O CÓDIGO CONTINUA AQUI, FORA DO LOOP FOR, MAS DENTRO DA FUNÇÃO
     total_geral = total_receitas - total_despesas
 
     st.markdown(
