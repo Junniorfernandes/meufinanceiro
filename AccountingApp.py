@@ -589,9 +589,9 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
 
         pdf.cell(col_widths[0], 10, data_formatada.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C')
         pdf.cell(col_widths[1], 10, descricao.encode('latin1', 'replace').decode('latin1'), 1, 0, 'L')
-        pdf.cell(col_widths[2], 10, categoria.encode('latin1', 'replace').decode('latin1') if categoria else "", 1, 0,
+        pdf.cell(col_widths[2], 10, tipo.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C')
+	pdf.cell(col_widths[3], 10, categoria.encode('latin1', 'replace').decode('latin1') if categoria else "", 1, 0,
                  'C')
-        pdf.cell(col_widths[3], 10, tipo.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C')
         pdf.cell(col_widths[4], 10, valor_formatado.encode('latin1', 'replace').decode('latin1'), 1, 0, 'R')
 
         pdf.ln()
