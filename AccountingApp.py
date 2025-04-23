@@ -616,7 +616,6 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
             pdf.set_font(current_font_family, original_font_style, current_font_size)
 
         if signatario_cargo:
-            pdf.set_font(current_font_family, original_font_style + 'B', current_font_size)
             pdf.cell(0, 8, signatario_cargo, 0, 1, 'C')
 
     pdf_output = pdf.output(dest='S')
