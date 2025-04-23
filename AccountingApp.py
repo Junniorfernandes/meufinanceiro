@@ -887,6 +887,47 @@ def exibir_lancamentos():
         filename_suffix = st.session_state.get('usuario_atual_nome', 'usuario').replace(" ", "_").lower()
         usuario_para_pdf_title = st.session_state.get('usuario_atual_nome', 'Usuário')
 
+# --- Adicionar Filtro por Data ---
+    st.subheader("Filtrar Lançamentos por Data")
+    col_data_inicio, col_data_fim = st.columns(2)
+
+    with col_data_inicio:
+        data_inicio_filtro = st.date_input("Data de Início", value=None, key="data_inicio_filtro")
+
+    with col_data_fim:
+        data_fim_filtro = st.date_input("Data de Fim", value=None, key="data_fim_filtro")
+
+    lancamentos_filtrados_por_data = lancamentos_para_exibir # Inicializa com a lista completa ou filtrada por usuário
+
+    if data_inicio_filtro and data_fim_filtro:
+        # Converte as datas de filtro para o formato 'YYYY-MM-DD' para comparação
+        data_inicio_str = data_inicio_filtro.strftime("%Y-%m-%d")
+        data_fim_str = data_fim_filtro.strftime("%Y-%m-%d")
+
+        lancamentos_filtrados_por_data = [
+            lancamento for lancamento in lancamentos_para_exibir
+            if lancamento.get('Data') and data_inicio_str <= lancamento.get('Data') <= data_fim_str
+        ]
+        st.info(f"Exibindo lançamentos de {data_inicio_str} a {data_fim_str}.")
+    elif data_inicio_filtro:
+        data_inicio_str = data_inicio_filtro.strftime("%Y-%m-%d")
+        lancamentos_filtrados_por_data = [
+            lancamento for lancamento in lancamentos_para_exibir
+            if lancamento.get('Data') and lancamento.get('Data') >= data_inicio_str
+        ]
+        st.info(f"Exibindo lançamentos a partir de {data_inicio_str}.")
+    elif data_fim_filtro:
+        data_fim_str = data_fim_filtro.strftime("%Y-%m-%d")
+        lancamentos_filtrados_por_data = [
+            lancamento for lancamento in lancamentos_para_exibir
+            if lancamento.get('Data') and lancamento.get('Data') <= data_fim_str
+        ]
+        st.info(f"Exibindo lançamentos até {data_fim_str}.")
+
+    # Agora, a lista a ser exibida e exportada é 'lancamentos_filtrados_por_data'
+    lancamentos_para_exibir = lancamentos_filtrados_por_data # Sobrescreve a lista original para usar a filtrada
+    # --- Fim do Filtro por Data ---
+
     if not lancamentos_para_exibir:
         st.info("Nenhum lançamento encontrado para este usuário.")
         # Exibe os botões de exportação mesmo com lista vazia (arquivos estarão vazios ou com cabeçalho)
