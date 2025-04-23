@@ -583,11 +583,11 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
             data_formatada = lancamento.get("Data", "Data Inválida")
 
         descricao = lancamento.get("Descrição", "")
-        categoria = lancamento.get("Categorias", "")
         tipo = lancamento.get("Tipo de Lançamento", "")
+	categoria = lancamento.get("Categorias", "")
         valor_formatado = f"R$ {lancamento.get('Valor', 0.0):.2f}".replace('.', ',')
 
-        pdf.cell(col_widths[0], 10, data_formatada.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C')
+	pdf.cell(col_widths[0], 10, data_formatada.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C')
         pdf.cell(col_widths[1], 10, descricao.encode('latin1', 'replace').decode('latin1'), 1, 0, 'L')
         pdf.cell(col_widths[2], 10, tipo.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C')
 	pdf.cell(col_widths[3], 10, categoria.encode('latin1', 'replace').decode('latin1') if categoria else "", 1, 0,
