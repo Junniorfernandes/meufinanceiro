@@ -569,7 +569,7 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
     # Usa a fonte com suporte a acentos (se carregada) ou a padrão para os cabeçalhos e dados da tabela
     pdf.set_font(font_for_table, 'B', 10)  # Cabeçalhos em negrito
     col_widths = [20, 50, 30, 20, 20]
-    headers = ["Data", "Descrição", "Tipo", "Categoria", "Valor"]
+    headers = ["Data", "Descrição", "Categoria", "Tipo", "Valor"]
 
     for i, header in enumerate(headers):
         pdf.cell(col_widths[i], 10, header.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C', fill=False)
@@ -583,15 +583,15 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
             data_formatada = lancamento.get("Data", "Data Inválida")
 
         descricao = lancamento.get("Descrição", "")
+        categoria = lancamento.get("Categorias", "")
         tipo = lancamento.get("Tipo de Lançamento", "")
-	categoria = lancamento.get("Categorias", "")
         valor_formatado = f"R$ {lancamento.get('Valor', 0.0):.2f}".replace('.', ',')
 
-	pdf.cell(col_widths[0], 10, data_formatada.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C')
+        pdf.cell(col_widths[0], 10, data_formatada.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C')
         pdf.cell(col_widths[1], 10, descricao.encode('latin1', 'replace').decode('latin1'), 1, 0, 'L')
-        pdf.cell(col_widths[2], 10, tipo.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C')
-	pdf.cell(col_widths[3], 10, categoria.encode('latin1', 'replace').decode('latin1') if categoria else "", 1, 0,
+        pdf.cell(col_widths[2], 10, categoria.encode('latin1', 'replace').decode('latin1') if categoria else "", 1, 0,
                  'C')
+        pdf.cell(col_widths[3], 10, tipo.encode('latin1', 'replace').decode('latin1'), 1, 0, 'C')
         pdf.cell(col_widths[4], 10, valor_formatado.encode('latin1', 'replace').decode('latin1'), 1, 0, 'R')
 
         pdf.ln()
