@@ -5,7 +5,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import io
-
+import uuid
 from fpdf import FPDF
 
 # --- Estilo CSS para os botões de navegação ---
