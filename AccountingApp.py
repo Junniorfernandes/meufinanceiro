@@ -669,7 +669,7 @@ def criar_grafico_donut(receitas_por_categoria):
         values,
         labels=labels,
         autopct='%1.1f%%',
-        pctdistance=0.85,
+        pctdistance=0.60,
         wedgeprops=dict(width=0.5),
         colors=cores_personalizadas
     )
