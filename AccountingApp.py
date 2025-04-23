@@ -264,14 +264,14 @@ def render_add_lancamento_form():
             data_str = st.text_input("Data (DD/MM/AAAA)", key="add_lanc_data_form")
             descricao = st.text_input("Descrição do lançamento", key="add_lanc_descricao_form")
             # Captura o tipo de lançamento selecionado primeiro
-            tipo = st.selectbox("Tipo de Lançamento", ["Receita", "Despesa"], key="add_lanc_tipo_form")
+            tipo = st.selectbox("Tipo de Lançamento", ["Receita/Entradas", "Despesa/Entradas"], key="add_lanc_tipo_form")
 
             # Cria um placeholder para a Categoria
             categoria_placeholder = st.empty()
 
             categorias = ""  # Inicializa a variável de categoria
             # Só exibe o campo Categoria dentro do placeholder se o tipo for Receita (conforme original)
-            if tipo == "Receita":
+            if tipo == "Receita/Entradas":
                 # Usa a lista combinada de categorias de receita do usuário logado
                 categorias_disponiveis = st.session_state.get('todas_categorias_receita', CATEGORIAS_PADRAO_RECEITA)
                 categorias = categoria_placeholder.selectbox(
@@ -645,12 +645,12 @@ def criar_grafico_donut(receitas_por_categoria):
     for text in texts:
         text.set_color('black')       # Cor do texto da categoria
         text.set_fontsize(14)         # Tamanho da fonte da categoria
-
+	text.set_weight('bold')
     # Customiza o texto das porcentagens dentro do gráfico
     for autotext in autotexts:
         autotext.set_color('white')   # Cor do texto percentual
         autotext.set_fontsize(14)     # Tamanho da fonte percentual
-
+	autotext.set_weight('bold')
     plt.title('Distribuição de Receitas', fontsize=16, fontweight='bold', color='#003548')
 
     temp_filename = f"/tmp/donut_{uuid.uuid4().hex}.png"
