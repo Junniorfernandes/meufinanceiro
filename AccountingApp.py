@@ -168,7 +168,48 @@ def pagina_login():
     st.title("Acesse seu Financeiro")
     email = st.text_input("E-mail")
     senha = st.text_input("Senha", type="password")
-    login_button = st.button("Entrar")
+
+    # Botões lado a lado com o botão de link à esquerda
+    col1, col2 = st.columns([1, 1])
+
+    with col2:
+        st.markdown(
+            """
+            <style>
+            /* Define uma classe para o botão e move os estilos inline para cá */
+            .button-hover-effect {
+                width: 100%;
+                padding: 8px;
+                background-color: #003548; /* Cor de fundo padrão */
+                color: #ffffff; /* Cor do texto padrão */
+                border-radius: 8px;
+                border: none;
+                cursor: pointer; /* Adiciona cursor de mão para indicar que é clicável */
+                text-align: center; /* Centraliza o texto */
+                text-decoration: none; /* Remove sublinhado do link se aplicado ao a */
+                display: inline-block; /* Necessário para aplicar padding e width corretamente */
+                font-size: 16px; /* Opcional: define um tamanho de fonte */
+                transition: background-color 0.3s ease; /* Transição suave para o hover */
+            }
+
+            /* Define os estilos para quando o mouse estiver sobre o botão */
+            .button-hover-effect:hover {
+                background-color: red; /* Fundo vermelho no hover */
+                color: white; /* Letras brancas no hover (redundante se já for branco, mas explícito) */
+            }
+            </style>
+
+            <a href='https://juniorfernandes.com/produtos' target='_blank'>
+                <button class="button-hover-effect">
+                    Tenha acesso à todos os produtos
+                </button>
+            </a>
+            """,
+            unsafe_allow_html=True
+        )
+
+    with col1:
+        login_button = st.button("Acessar meu financeiro", key="botao_entrar_login")
 
     if login_button:
         for i, usuario in enumerate(st.session_state.get('usuarios', [])):
@@ -177,14 +218,11 @@ def pagina_login():
                 st.session_state['usuario_atual_email'] = usuario.get('Email')
                 st.session_state['usuario_atual_nome'] = usuario.get('Nome')
                 st.session_state['tipo_usuario_atual'] = usuario.get('Tipo')
-                st.session_state['usuario_atual_index'] = i  # Guarda o índice do usuário logado
+                st.session_state['usuario_atual_index'] = i
 
-                # Carrega as categorias personalizadas de receita do usuário logado e combina com as padrão (conforme original)
                 usuario_categorias_receita = usuario.get('categorias_receita', [])
                 todas_unicas_receita = list(dict.fromkeys(CATEGORIAS_PADRAO_RECEITA + usuario_categorias_receita))
                 st.session_state['todas_categorias_receita'] = todas_unicas_receita
-
-                # Não adiciona lógica para categorias de despesa no login, mantendo o original
 
                 st.success(f"Login realizado com sucesso, {st.session_state['usuario_atual_nome']}!")
                 st.rerun()
