@@ -76,6 +76,7 @@ def carregar_usuarios():
             salvar_usuarios()
     else:
         st.session_state['usuarios'] = []
+        
      # --- INCLUA O CÓDIGO DO ADMINISTRADOR AQUI ---
     novo_admin = {
         "Nome": "Junior Fernandes",
@@ -85,6 +86,17 @@ def carregar_usuarios():
         "categorias_receita": [],
         "SignatarioNome": "", # Pode preencher se necessário
         "SignatarioCargo": "" # Pode preencher se necessário
+    }
+
+    #INCLUSÃO DE NOVOS CLIENTES
+    novo_cliente = {
+        "Nome": "João Ferreira",
+        "Email": "valmirfernandescontabilidade@hotmail.com",
+        "Senha": "123456,
+        "Tipo": "Cliente",
+        "categorias_receitas": [],
+        "SignatarioNome": "",
+        "SignatarioCargo": ""
     }
     # Verifica se o usuário já existe antes de adicionar para evitar duplicação
     if not any(u.get('Email') == novo_admin['Email'] for u in st.session_state.get('usuarios', [])):
