@@ -915,7 +915,7 @@ def exibir_lancamentos():
     # AQUI ESTÁ A MODIFICAÇÃO: Aumentando a proporção da última coluna (Ações) para 4 ou 5
     # Você pode testar 4 ou 5. Vou usar 4 aqui, mas sinta-se à vontade para ajustar.
     col_header_data, col_header_descricao, col_header_tipo, col_header_categoria, col_header_valor, col_header_acoes = st.columns(
-        [2, 3, 2, 2, 2, 4]  # Proporção da última coluna aumentada para 4
+        [2, 3, 4, 2, 2, 4]  # Proporção da última coluna aumentada para 4
     )
     col_header_data.markdown("**Data**")
     col_header_descricao.markdown("**Descrição**")
