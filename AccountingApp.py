@@ -269,7 +269,7 @@ def render_add_lancamento_form():
 
             categorias = ""  # Inicializa a variável de categoria
             # Só exibe o campo Categoria dentro do placeholder se o tipo for Receita (conforme original)
-            if tipo == "Receita":
+            if tipo == "Receita/Entradas":
                 # Usa a lista combinada de categorias de receita do usuário logado
                 categorias_disponiveis = st.session_state.get('todas_categorias_receita', CATEGORIAS_PADRAO_RECEITA)
                 categorias = categoria_placeholder.selectbox(
