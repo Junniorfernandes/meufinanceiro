@@ -5,6 +5,7 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import io
+
 from fpdf import FPDF
 
 # --- Estilo CSS para os botões de navegação ---
@@ -623,26 +624,21 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
 #Criar gráfico de Donuts
 
 def criar_grafico_donut(receitas_por_categoria):
-    # Criar figura com fundo transparente
     plt.figure(figsize=(8, 8), facecolor='none')
 
-    # Dados para o gráfico
     labels = list(receitas_por_categoria.keys())
     values = list(receitas_por_categoria.values())
 
-    # Criar gráfico de donut
     plt.pie(values, labels=labels, autopct='%1.1f%%', pctdistance=0.85,
             wedgeprops=dict(width=0.5))
-
     plt.title('Distribuição de Receitas por Categoria')
 
-    # Salvar o gráfico em um buffer
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png', bbox_inches='tight', transparent=True, dpi=300)
-    buf.seek(0)
+    # Caminho temporário para salvar o arquivo PNG
+    temp_filename = f"/tmp/donut_{uuid.uuid4().hex}.png"
+    plt.savefig(temp_filename, bbox_inches='tight', transparent=True, dpi=300)
     plt.close()
 
-    return buf
+    return temp_filename
 
 # --- FUNÇÃO para gerar a Demonstração de Resultados em PDF ---
 def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário"):
@@ -709,9 +705,10 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
 
     # --- Gráfico de Donut de Receitas ---
     if receitas_por_categoria:
-    	grafico_buffer = criar_grafico_donut(receitas_por_categoria)
-    	pdf.image(grafico_buffer, x=55, y=pdf.get_y(), w=100)  # Centraliza aproximadamente
-    	pdf.ln(110)  # Espaço após o gráfico
+    	donut_path = criar_grafico_donut(receitas_por_categoria)
+    	pdf.image(donut_path, x=55, y=pdf.get_y(), w=100)
+    	pdf.ln(110)
+
 	
 
     # --- Adicionar Despesas ao PDF ---
