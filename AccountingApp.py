@@ -709,9 +709,9 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
 
     # --- Gráfico de Donut de Receitas ---
     if receitas_por_categoria:
-    grafico_buffer = criar_grafico_donut(receitas_por_categoria)
-    pdf.image(grafico_buffer, x=55, y=pdf.get_y(), w=100)  # Centraliza aproximadamente
-    pdf.ln(110)  # Espaço após o gráfico
+    	grafico_buffer = criar_grafico_donut(receitas_por_categoria)
+    	pdf.image(grafico_buffer, x=55, y=pdf.get_y(), w=100)  # Centraliza aproximadamente
+    	pdf.ln(110)  # Espaço após o gráfico
 	
 
     # --- Adicionar Despesas ao PDF ---
