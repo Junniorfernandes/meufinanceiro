@@ -702,15 +702,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     pdf.cell(100, 7, "Total Receitas".encode('latin1', 'replace').decode('latin1'), 0, 0, 'L')
     pdf.cell(0, 7, f"R$ {total_receitas:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
     pdf.ln(10)  # Espaço após a seção de Receitas
-
-    # --- Gráfico de Donut de Receitas ---
-    if receitas_por_categoria:
-    	donut_path = criar_grafico_donut(receitas_por_categoria)
-    	pdf.image(donut_path, x=55, y=pdf.get_y(), w=100)
-    	pdf.ln(110)
-
 	
-
     # --- Adicionar Despesas ao PDF ---
     pdf.set_font(font_for_text, 'B', 12)  # Título da seção em negrito
     pdf.cell(0, 10, "Despesas".encode('latin1', 'replace').decode('latin1'), 0, 1, 'L')
@@ -749,6 +741,12 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     y_atual = pdf.get_y()
     pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
     pdf.ln(5)
+
+    # --- Gráfico de Donut de Receitas ---
+    if receitas_por_categoria:
+    	donut_path = criar_grafico_donut(receitas_por_categoria)
+    	pdf.image(donut_path, x=55, y=pdf.get_y(), w=100)
+    	pdf.ln(110)
 
     # --- Comentário Analítico ---
     comentario = ""
