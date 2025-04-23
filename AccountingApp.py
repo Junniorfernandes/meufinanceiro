@@ -475,6 +475,40 @@ def exibir_resumo_central():
     total_receitas = 0
     total_despesas = 0
 
+# --- Aplicar Filtro por Data ao Resumo ---
+    data_inicio_filtro = st.session_state.get("data_inicio_filtro")
+    data_fim_filtro = st.session_state.get("data_fim_filtro")
+
+    lancamentos_para_resumo_filtrados = lancamentos_para_resumo # Começa com a lista já filtrada por usuário
+
+    if data_inicio_filtro and data_fim_filtro:
+        data_inicio_str = data_inicio_filtro.strftime("%Y-%m-%d")
+        data_fim_str = data_fim_filtro.strftime("%Y-%m-%d")
+        lancamentos_para_resumo_filtrados = [
+            l for l in lancamentos_para_resumo
+            if l.get('Data') and data_inicio_str <= l.get('Data') <= data_fim_str
+        ]
+    elif data_inicio_filtro:
+        data_inicio_str = data_inicio_filtro.strftime("%Y-%m-%d")
+        lancamentos_para_resumo_filtrados = [
+            l for l in lancamentos_para_resumo
+            if l.get('Data') and l.get('Data') >= data_inicio_str
+        ]
+    elif data_fim_filtro:
+        data_fim_str = data_fim_filtro.strftime("%Y-%m-%d")
+        lancamentos_para_resumo_filtrados = [
+            l for l in lancamentos_para_resumo
+            if l.get('Data') and l.get('Data') <= data_fim_str
+        ]
+
+    # Agora, o resumo será calculado usando a lista filtrada por data
+    lancamentos_para_resumo = lancamentos_para_resumo_filtrados
+    # --- Fim do Filtro por Data ao Resumo ---
+
+    # Agora itera sobre a lista `lancamentos_para_resumo` (que agora inclui filtro por data)
+    for lancamento in lancamentos_para_resumo:
+        # ... restante do cálculo do resumo
+
     # Agora itera sobre a lista `lancamentos_para_resumo` (filtrada ou completa)
     for lancamento in lancamentos_para_resumo:
         if lancamento.get("Tipo de Lançamento") == "Receita":
