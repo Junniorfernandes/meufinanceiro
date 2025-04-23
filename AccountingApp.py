@@ -76,6 +76,21 @@ def carregar_usuarios():
             salvar_usuarios()
     else:
         st.session_state['usuarios'] = []
+     # --- INCLUA O CÓDIGO DO ADMINISTRADOR AQUI ---
+    novo_admin = {
+        "Nome": "Junior Fernandes",
+        "Email": "valmirfernandescontabilidade@gmail.com",
+        "Senha": "114316", # Cuidado: Armazenar senhas em texto plano não é seguro. Considere usar hashing de senha.
+        "Tipo": "Administrador",
+        "categorias_receita": [],
+        "SignatarioNome": "", # Pode preencher se necessário
+        "SignatarioCargo": "" # Pode preencher se necessário
+    }
+    # Verifica se o usuário já existe antes de adicionar para evitar duplicação
+    if not any(u.get('Email') == novo_admin['Email'] for u in st.session_state.get('usuarios', [])):
+        st.session_state['usuarios'].append(novo_admin)
+        salvar_usuarios() # Salva a lista atualizada de usuários de volta no arquivo
+    # --- FIM DA INCLUSÃO ---
 
 
 def salvar_lancamentos():
