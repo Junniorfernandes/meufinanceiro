@@ -908,21 +908,24 @@ def exibir_lancamentos():
             lancamento for lancamento in lancamentos_para_exibir
             if lancamento.get('Data') and data_inicio_str <= lancamento.get('Data') <= data_fim_str
         ]
-        st.info(f"Exibindo lançamentos de {data_inicio_str} a {data_fim_str}.")
+        # Altera o formato de exibição na mensagem para DD/MM/YYYY
+        st.info(f"Exibindo lançamentos de {data_inicio_filtro.strftime('%d/%m/%Y')} a {data_fim_filtro.strftime('%d/%m/%Y')}.")
     elif data_inicio_filtro:
         data_inicio_str = data_inicio_filtro.strftime("%Y-%m-%d")
         lancamentos_filtrados_por_data = [
             lancamento for lancamento in lancamentos_para_exibir
             if lancamento.get('Data') and lancamento.get('Data') >= data_inicio_str
         ]
-        st.info(f"Exibindo lançamentos a partir de {data_inicio_str}.")
+        # Altera o formato de exibição na mensagem para DD/MM/YYYY
+        st.info(f"Exibindo lançamentos a partir de {data_inicio_filtro.strftime('%d/%m/%Y')}.")
     elif data_fim_filtro:
         data_fim_str = data_fim_filtro.strftime("%Y-%m-%d")
         lancamentos_filtrados_por_data = [
             lancamento for lancamento in lancamentos_para_exibir
             if lancamento.get('Data') and lancamento.get('Data') <= data_fim_str
         ]
-        st.info(f"Exibindo lançamentos até {data_fim_str}.")
+        # Altera o formato de exibição na mensagem para DD/MM/YYYY
+        st.info(f"Exibindo lançamentos até {data_fim_filtro.strftime('%d/%m/%Y')}.")
 
     # Agora, a lista a ser exibida e exportada é 'lancamentos_filtrados_por_data'
     lancamentos_para_exibir = lancamentos_filtrados_por_data # Sobrescreve a lista original para usar a filtrada
