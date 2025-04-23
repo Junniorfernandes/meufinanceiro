@@ -919,10 +919,10 @@ def exibir_lancamentos():
     )
     col_header_data.markdown("**Data**")
     col_header_descricao.markdown("**Descrição**")
-    col_header_categoria.markdown("**Categoria**")
     col_header_tipo.markdown("**Tipo**")
+    col_header_categoria.markdown("**Categoria**")
     col_header_valor.markdown("**Valor**")
-    col_header_acoes.markdown("**Ações**")
+    col_header_acoes.markdown("**Ações: Editar/Excluir**")
 
     # Iteramos diretamente sobre a lista de lançamentos para exibir (que já está filtrada)
     for i, lancamento in enumerate(lancamentos_para_exibir):
