@@ -88,16 +88,6 @@ def carregar_usuarios():
         "SignatarioCargo": "" # Pode preencher se necessário
     }
 
-    #INCLUSÃO DE NOVOS CLIENTES
-    novo_cliente = {
-        "Nome": "João Ferreira",
-        "Email": "valmirfernandescontabilidade@hotmail.com",
-        "Senha": "123456",
-        "Tipo": "Cliente",
-        "categorias_receitas": [],
-        "SignatarioNome": "",
-        "SignatarioCargo": ""
-    }
     # Verifica se o usuário já existe antes de adicionar para evitar duplicação
     if not any(u.get('Email') == novo_admin['Email'] for u in st.session_state.get('usuarios', [])):
         st.session_state['usuarios'].append(novo_admin)
