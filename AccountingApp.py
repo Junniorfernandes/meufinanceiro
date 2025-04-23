@@ -624,21 +624,25 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
 #Criar gráfico de Donuts
 
 def criar_grafico_donut(receitas_por_categoria):
-    plt.figure(figsize=(8, 8), facecolor='none')
+    plt.figure(figsize=(7, 7), facecolor='none')
 
     labels = list(receitas_por_categoria.keys())
     values = list(receitas_por_categoria.values())
 
-    plt.pie(values, labels=labels, autopct='%1.1f%%', pctdistance=0.85,
-            wedgeprops=dict(width=0.5))
-    plt.title('Distribuição de Receitas por Categoria')
+    cores_personalizadas = ['#003548', '#0077b6', '#00b4d8', '#90e0ef', '#caf0f8']
 
-    # Caminho temporário para salvar o arquivo PNG
+    plt.pie(values, labels=labels, autopct='%1.1f%%', pctdistance=0.85,
+            wedgeprops=dict(width=0.5),
+            colors=cores_personalizadas)
+
+    plt.title('Distribuição de Receitas por Categoria', fontsize=14, fontweight='bold', color='#003548')
+
     temp_filename = f"/tmp/donut_{uuid.uuid4().hex}.png"
     plt.savefig(temp_filename, bbox_inches='tight', transparent=True, dpi=300)
     plt.close()
 
     return temp_filename
+
 
 # --- FUNÇÃO para gerar a Demonstração de Resultados em PDF ---
 def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário"):
