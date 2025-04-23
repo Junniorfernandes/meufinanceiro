@@ -262,7 +262,7 @@ def render_add_lancamento_form():
             data_str = st.text_input("Data (DD/MM/AAAA)", key="add_lanc_data_form")
             descricao = st.text_input("Descrição do lançamento", key="add_lanc_descricao_form")
             # Captura o tipo de lançamento selecionado primeiro
-            tipo = st.selectbox("Tipo de Lançamento", ["Receita (Entradas)", "Despesa (Saídas)"], key="add_lanc_tipo_form")
+            tipo = st.selectbox("Tipo de Lançamento", ["Receita", "Despesa"], key="add_lanc_tipo_form")
 
             # Cria um placeholder para a Categoria
             categoria_placeholder = st.empty()
