@@ -608,7 +608,7 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
         "SignatarioCargo", "")
 
     if signatario_nome or signatario_cargo:
-        pdf.set_font("Arial", '', 10)
+        pdf.set_font("Arial", 'B', 10) #pdf.set_font("Arial", 'B', 12)
 
         if signatario_nome:
             pdf.cell(0, 10, f"Assinado por: {signatario_nome}", 0, 1, 'C')
