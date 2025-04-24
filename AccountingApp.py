@@ -865,12 +865,14 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     pdf.image(barras_path, x=55, y=pdf.get_y(), w=100)
     pdf.ln(80)
 	
-    pdf.add_page()  # <<<< QUEBRA AQUI PARA NOVA PÁGINA
+    #pdf.add_page()  # <<<< QUEBRA AQUI PARA NOVA PÁGINA
 	
     y_atual = pdf.get_y()
     pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
     pdf.ln(5)
 
+    pdf.set_text_color(0, 0, 0) # Resetando o texto para preto
+	
     # --- Comentário Analítico ---
     comentario = ""
 
