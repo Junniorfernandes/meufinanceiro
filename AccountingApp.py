@@ -1241,6 +1241,9 @@ def pagina_configuracoes():
                 if nova_senha_propria:
                     st.session_state['usuarios'][usuario_logado_index]['Senha'] = nova_senha_propria
 
+	    if edit_email_propio !=usuario.get('Email', ''):
+		    usuario_logado['Email'] = edit_email_proprio
+
                     # SALVA SIGNATÁRIO
                 st.session_state['usuarios'][usuario_logado_index]['SignatarioNome'] = signatario_nome
                 st.session_state['usuarios'][usuario_logado_index]['SignatarioCargo'] = signatario_cargo
