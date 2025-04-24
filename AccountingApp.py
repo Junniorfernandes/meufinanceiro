@@ -843,7 +843,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
         yval = bar.get_height()
         plt.text(bar.get_x() + bar.get_width()/2.0, yval + max(valores)*0.02, f"R$ {yval:.2f}", ha='center', va='bottom', fontsize=10, fontweight='bold', color='black')
 
-    plt.title('Comparativo de Receita x Despesa', fontsize=12, fontweight='bold', color='#003548')
+    plt.title('Comparativo de Receita x Despesa', fontsize=12, fontweight='bold', color='#003548', pad=20)
     plt.ylabel('Valores (R$)', fontsize=10)
     plt.xticks(fontsize=10)
     plt.yticks(fontsize=9)
