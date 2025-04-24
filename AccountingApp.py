@@ -517,25 +517,46 @@ def exibir_resumo_central():
     # O CÓDIGO CONTINUA AQUI, FORA DO LOOP FOR, MAS DENTRO DA FUNÇÃO
     total_geral = total_receitas - total_despesas
 
-    st.markdown(
-        f"<p style='color:blue;'>Receitas: R$ {total_receitas:.2f}</p>",
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        f"<p style='color:red;'>Despesas: R$ {total_despesas:.2f}</p>",
-        unsafe_allow_html=True,
-    )
+    col1, col2, col3 = st.columns(3)
 
-    if total_geral >= 0:
+    with col1:
         st.markdown(
-            f"<p style='color:blue;'>Total: R$ {total_geral:.2f}</p>",
-            unsafe_allow_html=True,
+            f"""
+            <div style="background-color:#ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05); text-align: center;">
+                <div style="font-size: 22px; color: green;">🟢</div>
+                <div style="font-size: 16px; color: #666;">Receitas</div>
+                <div style="font-size: 20px; color: green;"><strong>R$ {total_receitas:.2f}</strong></div>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
-    else:
+
+    with col2:
         st.markdown(
-            f"<p style='color:red;'>Total: R$ {total_geral:.2f}</p>",
-            unsafe_allow_html=True,
+            f"""
+            <div style="background-color:#ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05); text-align: center;">
+                <div style="font-size: 22px; color: red;">🔴</div>
+                <div style="font-size: 16px; color: #666;">Despesas</div>
+                <div style="font-size: 20px; color: red;"><strong>R$ {total_despesas:.2f}</strong></div>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
+
+    with col3:
+        cor_saldo = "green" if total_geral >= 0 else "red"
+        icone_saldo = "📈" if total_geral >= 0 else "📉"
+        st.markdown(
+            f"""
+            <div style="background-color:#ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.05); text-align: center;">
+                <div style="font-size: 22px; color: {cor_saldo};">{icone_saldo}</div>
+                <div style="font-size: 16px; color: #666;">Saldo</div>
+                <div style="font-size: 20px; color: {cor_saldo};"><strong>R$ {total_geral:.2f}</strong></div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
 
     st.markdown("---")
 
