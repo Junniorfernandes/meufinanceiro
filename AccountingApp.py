@@ -827,7 +827,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     	pdf.image(donut_path, x=55, y=pdf.get_y(), w=100)
     	pdf.ln(110)
 
-    plt.figure(figsize=(5, 3), facecolor='none') # Ajuste aqui largura x altura
+    plt.figure(figsize=(4, 6), facecolor='none') # Ajuste aqui largura x altura
     
     ax = plt.gca()
     for spine in ax.spines.values():
@@ -835,7 +835,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
 
     categorias = ['Receitas', 'Despesas']
     valores = [total_receitas, total_despesas]
-    cores_barras = ['#007f5f', '#d62828']  # Cores personalizadas
+    cores_barras = ['#00163C', '#FF0000']  # Cores personalizadas
 
     barras = plt.bar(categorias, valores, color=cores_barras)
 
@@ -843,9 +843,9 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
         yval = bar.get_height()
         plt.text(bar.get_x() + bar.get_width()/2.0, yval + max(valores)*0.02, f"R$ {yval:.2f}", ha='center', va='bottom', fontsize=10, fontweight='bold', color='black')
 
-    plt.title('Comparativo de Receita x Despesa', fontsize=12, fontweight='bold', color='#003548', pad=20)
-    plt.ylabel('Valores (R$)', fontsize=10)
-    plt.xticks(fontsize=10)
+    plt.title('Comparativo de Receita x Despesa', fontsize=12, fontweight='bold', color='#000000', pad=20)
+    plt.ylabel('Valores (R$)', fontsize=10, fontweight='bold')
+    plt.xticks(fontsize=10, fontweight='bold')
     plt.yticks(fontsize=9)
     plt.tight_layout()
 
