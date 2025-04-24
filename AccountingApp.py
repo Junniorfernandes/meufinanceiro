@@ -855,8 +855,10 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
 
     pdf.image(barras_path, x=55, y=pdf.get_y(), w=100)
     pdf.ln(80)
+	
+    pdf.add_page()  # <<<< QUEBRA AQUI PARA NOVA PÁGINA
+	
     y_atual = pdf.get_y()
-    #pdf.cell(0, 15, "", 0, 1)  # Adiciona 15mm de espaço vertical
     pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
     pdf.ln(5)
 
