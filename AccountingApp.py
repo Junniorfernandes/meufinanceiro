@@ -821,7 +821,11 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
     pdf.ln(5)
 
-    plt.title('Análise de Graficos', fontsize=12, fontweight='bold', color='#003548', pad=20)	
+    #Análise de Gáficos
+    pdf.set_font("Ariel", size=14, style='B')
+    pdf.set_text_color(0, 22, 60)	
+    pdf.cell(0, 10, "Análise de Gráficos".encode('latin1', 'replace').decode('latin1'), ln=True, align="C")
+    pdf.ln(5)
 	
     # --- Gráfico de Donut de Receitas ---
     if receitas_por_categoria:
