@@ -826,6 +826,31 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     	donut_path = criar_grafico_donut(receitas_por_categoria)
     	pdf.image(donut_path, x=55, y=pdf.get_y(), w=100)
     	pdf.ln(110)
+
+    	plt.figure(figsize=(5, 3), facecolor='none')
+
+    	categorias = ['Receitas', 'Despesas']
+    	valores = [total_receitas, total_despesas]
+    	cores_barras = ['#007f5f', '#d62828']  # Personalize aqui
+
+    	barras = plt.bar(categorias, valores, color=cores_barras)
+
+    	for bar in barras:
+        	yval = bar.get_height()
+        	plt.text(bar.get_x() + bar.get_width()/2.0, yval + max(valores)*0.02, f"R$ {yval:.2f}", ha='center', va='bottom', fontsize=10, fontweight='bold', color='black')
+
+    	plt.title('Comparativo de Receita x Despesa', fontsize=12, fontweight='bold', color='#003548')
+    	plt.ylabel('Valores (R$)', fontsize=10)
+    	plt.xticks(fontsize=10)
+    	plt.yticks(fontsize=9)
+    	plt.tight_layout()
+
+    	barras_path = f"/tmp/barras_{uuid.uuid4().hex}.png"
+    	plt.savefig(barras_path, bbox_inches='tight', transparent=True, dpi=300)
+    	plt.close()
+
+    	pdf.image(barras_path, x=55, y=pdf.get_y(), w=100)
+    	pdf.ln(80)
     y_atual = pdf.get_y()
     pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
     pdf.ln(5)
