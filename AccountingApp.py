@@ -827,7 +827,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     	pdf.image(donut_path, x=55, y=pdf.get_y(), w=100)
     	pdf.ln(90) 
 
-    plt.figure(figsize=(3, 3,5), facecolor='none') # Ajuste aqui largura x altura
+    plt.figure(figsize=(3, 3.5), facecolor='none') # Ajuste aqui largura x altura
     
     ax = plt.gca()
     for spine in ax.spines.values():
