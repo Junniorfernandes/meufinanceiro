@@ -851,9 +851,9 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
 
     	pdf.image(barras_path, x=55, y=pdf.get_y(), w=100)
     	pdf.ln(80)
-    y_atual = pdf.get_y()
-    pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
-    pdf.ln(5)
+y_atual = pdf.get_y()
+pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
+pdf.ln(5)
 
     # --- Comentário Analítico ---
     comentario = ""
