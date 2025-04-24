@@ -800,15 +800,15 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
     pdf.ln(5)
 
-# --- INÍCIO DO BLOCO DO GRÁFICO DE BARRAS (Estilo similar ao Donut) ---
-    # --- Adicionar Gráfico de Barras Comparando Receitas e Despesas no PDF ---
+# --- INÍCIO DO BLOCO CORRIGIDO DO GRÁFICO DE BARRAS ---
+    # --- Adicionar Gráfico de Barras Comparando Receitas e Despesas no PDF (Estilo similar ao Donut) ---
     if total_receitas > 0 or total_despesas_geral > 0: # Só gera o gráfico se houver dados
         # Usar as mesmas cores base do gráfico de donut, talvez ajustadas para barras
         cores_barras = ['#003548', '#D6110F'] # Azul escuro para Receitas, Vermelho para Despesas
 
         bar_fig, ax = plt.subplots(figsize=(7, 5), facecolor='none') # Ajustar tamanho e fundo
         labels = ['Receitas', 'Despesas']
-        values = [total_receitas, total_despesas_geral]
+        values = [total_receitas, total_despesas_geral] # Usar a variável correta aqui!
 
         bars = ax.bar(labels, values, color=cores_barras)
 
@@ -825,6 +825,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
         ax.tick_params(axis='y', labelsize=12, colors='#262730') # Cor dos labels do eixo Y
         ax.spines['top'].set_visible(False) # Remover borda superior
         ax.spines['right'].set_visible(False) # Remover borda direita
+
 
         plt.tight_layout() # Ajusta o layout para evitar cortes
 
@@ -846,8 +847,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
             os.remove(bar_temp_filename)
         except OSError as e:
             print(f"Erro ao remover arquivo temporário do gráfico de barras: {e}")
-
-    # --- FIM DO BLOCO DO GRÁFICO DE BARRAS ---
+    # --- FIM DO BLOCO CORRIGIDO DO GRÁFICO DE BARRAS ---
 
     # --- Gráfico de Donut de Receitas ---
     if receitas_por_categoria:
