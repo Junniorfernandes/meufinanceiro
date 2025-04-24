@@ -1223,7 +1223,7 @@ def pagina_configuracoes():
 
         st.subheader(f"Editar Meu Perfil ({usuario_logado.get('Tipo', 'Tipo Desconhecido')})")
         edit_nome_proprio = st.text_input("Nome", usuario_logado.get('Nome', ''), key="edit_meu_nome")
-        edit_email_propio = st.text_imput("Email", usuario_logado.get('Email',''), Key="edit_meu_email") #st.text_input("E-mail", usuario_logado.get('Email', ''), disabled=True)
+        st.text_input("E-mail", usuario_logado.get('Email', ''), disabled=True)
         nova_senha_propria = st.text_input("Nova Senha (deixe em branco para manter)", type="password", value="",
                                            key="edit_minha_nova_senha")
         confirmar_nova_senha_propria = st.text_input("Confirmar Nova Senha", type="password", value="",
@@ -1240,9 +1240,6 @@ def pagina_configuracoes():
                 st.session_state['usuarios'][usuario_logado_index]['Nome'] = edit_nome_proprio
                 if nova_senha_propria:
                     st.session_state['usuarios'][usuario_logado_index]['Senha'] = nova_senha_propria
-
-	    if edit_email_proprio != usuario_logado.get('Email', ''):
-            	st.session_state['usuarios'][usuario_logado_index]['Email'] = edit_email_proprio
 
                     # SALVA SIGNATÁRIO
                 st.session_state['usuarios'][usuario_logado_index]['SignatarioNome'] = signatario_nome
