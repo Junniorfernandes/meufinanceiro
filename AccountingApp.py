@@ -821,12 +821,15 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
     pdf.ln(5)
 
+    plt.title('Análise de Graficos', fontsize=12, fontweight='bold', color='#003548', pad=20)	
+	
     # --- Gráfico de Donut de Receitas ---
     if receitas_por_categoria:
     	donut_path = criar_grafico_donut(receitas_por_categoria)
     	pdf.image(donut_path, x=55, y=pdf.get_y(), w=100)
     	pdf.ln(90) 
 
+    # --- Gráfico de Barras ----	
     plt.figure(figsize=(3, 3.2), facecolor='none') # Ajuste aqui largura x altura
     
     ax = plt.gca()
