@@ -866,6 +866,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     pdf.ln(80)
 	
     #pdf.add_page()  # <<<< QUEBRA AQUI PARA NOVA PÁGINA
+    pdf.cell(0, 15, "", 0, 1)
 	
     y_atual = pdf.get_y()
     pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
