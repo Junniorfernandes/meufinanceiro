@@ -822,7 +822,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     pdf.ln(5)
 
     #Análise de Gáficos
-    pdf.set_font("Ariel", size=14, style='B')
+    pdf.set_font("Arial", size=14, style='B')
     pdf.set_text_color(0, 22, 60)	
     pdf.cell(0, 10, "Análise de Gráficos".encode('latin1', 'replace').decode('latin1'), ln=True, align="C")
     pdf.ln(5)
