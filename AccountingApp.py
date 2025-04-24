@@ -827,11 +827,15 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     	pdf.image(donut_path, x=55, y=pdf.get_y(), w=100)
     	pdf.ln(110)
 
-    plt.figure(figsize=(5, 3), facecolor='none')
+    plt.figure(figsize=(5, 3), facecolor='none') # Ajuste aqui largura x altura
+    
+    ax = plt.gca()
+    for spine in ax.spines.values():
+    	spine.set_visible(False)  # Remove borda do gráfico
 
     categorias = ['Receitas', 'Despesas']
     valores = [total_receitas, total_despesas]
-    cores_barras = ['#007f5f', '#d62828']  # Personalize aqui
+    cores_barras = ['#007f5f', '#d62828']  # Cores personalizadas
 
     barras = plt.bar(categorias, valores, color=cores_barras)
 
