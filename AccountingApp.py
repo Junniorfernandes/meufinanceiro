@@ -800,55 +800,6 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
     pdf.ln(5)
 
-# --- INÍCIO DO BLOCO CORRIGIDO DO GRÁFICO DE BARRAS ---
-    # --- Adicionar Gráfico de Barras Comparando Receitas e Despesas no PDF (Estilo similar ao Donut) ---
-    if total_receitas > 0 or total_despesas_geral > 0: # Só gera o gráfico se houver dados
-        # Usar as mesmas cores base do gráfico de donut, talvez ajustadas para barras
-        cores_barras = ['#003548', '#D6110F'] # Azul escuro para Receitas, Vermelho para Despesas
-
-        bar_fig, ax = plt.subplots(figsize=(7, 5), facecolor='none') # Ajustar tamanho e fundo
-        labels = ['Receitas', 'Despesas']
-        values = [total_receitas, total_despesas_geral] # Usar a variável correta aqui!
-
-        bars = ax.bar(labels, values, color=cores_barras)
-
-        # Adicionar os valores nas barras com estilo similar ao texto do donut
-        for bar in bars:
-            yval = bar.get_height()
-            # Posiciona o texto acima da barra, ajusta a cor e tamanho
-            ax.text(bar.get_x() + bar.get_width()/2.0, yval, f'R$ {yval:.2f}'.replace('.', ','),
-                    va='bottom', ha='center', fontsize=12, color='black', fontweight='bold') # Cores e fonte ajustadas
-
-        ax.set_ylabel('Valor (R$)', fontsize=12, color='#262730') # Cor similar ao texto padrão escuro
-        ax.set_title('Comparativo de Receitas e Despesas', fontsize=14, fontweight='bold', color='#003548') # Cor e estilo do título do donut
-        ax.tick_params(axis='x', labelsize=12, colors='#262730') # Cor dos labels do eixo X
-        ax.tick_params(axis='y', labelsize=12, colors='#262730') # Cor dos labels do eixo Y
-        ax.spines['top'].set_visible(False) # Remover borda superior
-        ax.spines['right'].set_visible(False) # Remover borda direita
-
-
-        plt.tight_layout() # Ajusta o layout para evitar cortes
-
-        # Salvar gráfico temporariamente
-        bar_temp_filename = f"/tmp/bar_{uuid.uuid4().hex}.png"
-        plt.savefig(bar_temp_filename, bbox_inches='tight', transparent=True, dpi=300)
-        plt.close(bar_fig)
-
-        # Adicionar o gráfico de barras ao PDF
-        pdf.ln(10) # Adiciona espaço antes do gráfico
-        # Removido o título separado "Gráfico Comparativo" para simplificar
-        pdf.image(bar_temp_filename, x=55, y=pdf.get_y(), w=100) # Ajuste x e y conforme necessário
-        pdf.ln(60) # Espaço após o gráfico de barras (ajuste conforme tamanho do gráfico)
-
-
-        # Remover o arquivo temporário
-        import os
-        try:
-            os.remove(bar_temp_filename)
-        except OSError as e:
-            print(f"Erro ao remover arquivo temporário do gráfico de barras: {e}")
-    # --- FIM DO BLOCO CORRIGIDO DO GRÁFICO DE BARRAS ---
-
     # --- Gráfico de Donut de Receitas ---
     if receitas_por_categoria:
     	donut_path = criar_grafico_donut(receitas_por_categoria)
