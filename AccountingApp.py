@@ -1223,7 +1223,7 @@ def pagina_configuracoes():
 
         st.subheader(f"Editar Meu Perfil ({usuario_logado.get('Tipo', 'Tipo Desconhecido')})")
         edit_nome_proprio = st.text_input("Nome", usuario_logado.get('Nome', ''), key="edit_meu_nome")
-        st.text_input("E-mail", usuario_logado.get('Email', ''), disabled=True)
+        edit_email_propio = st.text_imput("Email", usuario_logado.get('Email',''), Key="edit_meu_email") #st.text_input("E-mail", usuario_logado.get('Email', ''), disabled=True)
         nova_senha_propria = st.text_input("Nova Senha (deixe em branco para manter)", type="password", value="",
                                            key="edit_minha_nova_senha")
         confirmar_nova_senha_propria = st.text_input("Confirmar Nova Senha", type="password", value="",
