@@ -986,7 +986,7 @@ def exibir_lancamentos():
         usuario_para_pdf_title = st.session_state.get('usuario_atual_nome', 'Usuário')
 
 # --- Adicionar Filtro por Data ---
-    st.subheader("Filtrar Lançamentos por Data")
+    st.subheader("Selecione o Período dos Lançamentos")
     col_data_inicio, col_data_fim = st.columns(2)
 
     with col_data_inicio:
