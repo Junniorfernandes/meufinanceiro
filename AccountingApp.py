@@ -825,7 +825,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     if receitas_por_categoria:
     	donut_path = criar_grafico_donut(receitas_por_categoria)
     	pdf.image(donut_path, x=55, y=pdf.get_y(), w=100)
-    	pdf.ln(95) 
+    	pdf.ln(90) 
 
     plt.figure(figsize=(3, 4), facecolor='none') # Ajuste aqui largura x altura
     
