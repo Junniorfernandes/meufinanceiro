@@ -95,7 +95,7 @@ def carregar_usuarios():
     }
 
     # Verifica se o usuário já existe no Supabase antes de adicionar para evitar duplicação
-    admin_existente = any(u.get('Email') == novo_admin['Email'] for u in st.session_state.get('usuarios', []))
+    admin_existente = any(u.get('email') == novo_admin['email'] for u in st.session_state.get('usuarios', []))
 
     if not admin_existente:
         try:
