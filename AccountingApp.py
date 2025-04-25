@@ -13,8 +13,8 @@ from supabase import create_client, Client # --- ADAPTAÇÃO SUPABASE ---
 # Carregar credenciais do Supabase de .streamlit/secrets.toml
 # Certifique-se que este arquivo existe e contém SUPABASE_URL e SUPABASE_KEY
 try:
-    url: str = st.secrets["https://ibgsslsmvvgtrqseyvgw.supabase.co"]
-    key: str = st.secrets["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliZ3NzbHNtdnZndHJxc2V5dmd3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUxOTMzMDEsImV4cCI6MjA2MDc2OTMwMX0.jGiTnl8hwXg0_JRkLf9ShU2jkfRQOkkH_oCk9YuBDME"]
+    url: str = st.secrets["SUPABASE_URL"]
+    key: str = st.secrets["SUPABASE_KEY"]
     supabase: Client = create_client(url, key)
     st.success("Conectado ao Supabase!") # Mensagem de confirmação (opcional)
 except Exception as e:
