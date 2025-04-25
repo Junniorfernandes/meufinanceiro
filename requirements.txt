@@ -4,4 +4,4 @@ fpdf
 openpyxl
 streamlit-aggrid
 matplotlib
-supabase-py
+supabase-py==0.10.0
