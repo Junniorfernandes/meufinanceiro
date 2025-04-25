@@ -365,7 +365,7 @@ def pagina_login():
         if usuario_encontrado:
             st.session_state['autenticado'] = True
             st.session_state['usuario_atual_email'] = usuario_encontrado.get('email')
-            st.session_state['usuario_atual_nome'] = usuario_encontrado.get('Nome')
+            st.session_state['usuario_atual_nome'] = usuario_encontrado.get('nome')
             st.session_state['tipo_usuario_atual'] = usuario_encontrado.get('Tipo')
 
             # Carrega as categorias de receita personalizadas do usuário logado
