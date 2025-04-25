@@ -1463,12 +1463,12 @@ def pagina_configuracoes():
             if nova_senha_propria == confirmar_nova_senha_propria:
                 # --- ADAPTAÇÃO SUPABASE: Atualizar usuário logado no DB ---
                 dados_para_atualizar = {
-                    "Nome": edit_nome_proprio,
-                    "SignatarioNome": signatario_nome,
-                    "SignatarioCargo": signatario_cargo,
+                    "nome": edit_nome_proprio,
+                    "signatarioNome": signatario_nome,
+                    "signatarioCargo": signatario_cargo,
                 }
                 if nova_senha_propria:
-                     dados_para_atualizar["Senha"] = nova_senha_propria # Repito: use hashing em produção!
+                     dados_para_atualizar["senha"] = nova_senha_propria # Repito: use hashing em produção!
 
                 # Chame a função de salvar/atualizar, passando o ID do usuário logado
                 if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Inclui o ID e os dados
