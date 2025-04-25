@@ -1682,7 +1682,7 @@ def render_edit_usuario_form():
 
     # Verifica se o usuário logado é administrador e não está tentando editar a si mesmo através deste modal
     usuario_logado_email = st.session_state.get('usuario_atual_email')
-    if st.session_state.get('tipo_usuario_atual') != 'Administrador' or usuario_a_editar.get('Email') == usuario_logado_email:
+    if st.session_state.get('tipo_usuario_atual') != 'Administrador' or usuario_a_editar.get('email') == usuario_logado_email:
         st.error("Você não tem permissão para editar este usuário desta forma.")
         st.session_state['editar_usuario_data'] = None
         st.session_state['editar_usuario_index'] = None
@@ -1701,7 +1701,7 @@ def render_edit_usuario_form():
             edit_senha = st.text_input("Nova Senha (deixe em branco para manter)", type="password", value="",
                                      key=f"edit_user_senha_{user_id}") # Usa o ID no key
             edit_tipo = st.selectbox("Tipo", ["Cliente", "Administrador"], index=["Cliente", "Administrador"].index(
-                usuario_a_editar.get('Tipo', 'Cliente')), key=f"edit_user_tipo_{user_id}") # Usa o ID no key
+                usuario_a_editar.get('tipo', 'Cliente')), key=f"edit_user_tipo_{user_id}") # Usa o ID no key
 
             submit_edit_user_button = st.form_submit_button("Salvar Edição do Usuário")
 
