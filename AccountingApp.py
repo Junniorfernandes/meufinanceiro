@@ -1161,7 +1161,7 @@ def exibir_lancamentos():
         # --- ADICIONAR SELECTBOX PARA ESCOLHER O USUÁRIO ---
         # Crie uma lista de opções para o selectbox, incluindo a opção "Todos os Usuários"
         # Use a lista de usuários carregada do Supabase
-        opcoes_usuarios = ["Todos os Usuários"] + [u.get('Nome', 'Usuário Sem Nome') for u in
+        opcoes_usuarios = ["Todos os Usuários"] + [u.get('nome', 'Usuário Sem Nome') for u in
                                                    st.session_state.get('usuarios', [])]
 
         # Adicione o selectbox
@@ -1183,7 +1183,7 @@ def exibir_lancamentos():
             # Encontre o e-mail do usuário selecionado pelo nome
             usuario_selecionado_email = None
             for u in st.session_state.get('usuarios', []):
-                if u.get('Nome', 'Usuário Sem Nome') == usuario_selecionado_nome:
+                if u.get('nome', 'Usuário Sem Nome') == usuario_selecionado_nome:
                     usuario_selecionado_email = u.get('email')
                     break
 
@@ -1461,8 +1461,8 @@ def pagina_configuracoes():
 
     # Verificação adicional para garantir que o usuário logado foi encontrado
     if usuario_logado:
-        st.subheader(f"Editar Meu Perfil ({usuario_logado.get('Tipo', 'Tipo Desconhecido')})")
-        edit_nome_proprio = st.text_input("Nome", usuario_logado.get('Nome', ''), key="edit_meu_nome")
+        st.subheader(f"Editar Meu Perfil ({usuario_logado.get('tipo', 'Tipo Desconhecido')})")
+        edit_nome_proprio = st.text_input("Nome", usuario_logado.get('nome', ''), key="edit_meu_nome")
         st.text_input("E-mail", usuario_logado.get('email', ''), disabled=True)
         nova_senha_propria = st.text_input("Nova Senha (deixe em branco para manter)", type="password", value="",
                                             key="edit_minha_nova_senha")
@@ -1690,13 +1690,13 @@ def render_edit_usuario_form():
         return
 
     # Use o ID do Supabase no key do expander e do formulário
-    with st.expander(f"Editar Usuário: {usuario_a_editar.get('Nome', '')} (ID: {user_id})", expanded=True):
-        st.subheader(f"Editar Usuário: {usuario_a_editar.get('Nome', '')}")
+    with st.expander(f"Editar Usuário: {usuario_a_editar.get('nome', '')} (ID: {user_id})", expanded=True):
+        st.subheader(f"Editar Usuário: {usuario_a_editar.get('nome', '')}")
         with st.form(key=f"edit_usuario_form_{user_id}"): # Usa o ID do Supabase para o key do formulário
             # Usa os dados do usuario_a_editar (carregados do DB) para preencher o formulário
-            edit_nome = st.text_input("Nome", usuario_a_editar.get('Nome', ''),
+            edit_nome = st.text_input("Nome", usuario_a_editar.get('nome', ''),
                                       key=f"edit_user_nome_{user_id}") # Usa o ID no key
-            st.text_input("E-mail", usuario_a_editar.get('Email', ''), disabled=True,
+            st.text_input("E-mail", usuario_a_editar.get('email', ''), disabled=True,
                           key=f"edit_user_email_{user_id}") # Usa o ID no key
             edit_senha = st.text_input("Nova Senha (deixe em branco para manter)", type="password", value="",
                                      key=f"edit_user_senha_{user_id}") # Usa o ID no key
