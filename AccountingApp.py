@@ -583,7 +583,7 @@ def exibir_resumo_central():
             # Encontre o e-mail do usuário selecionado pelo nome na lista carregada do Supabase
             usuario_selecionado_email = None
             for u in st.session_state.get('usuarios', []):
-                if u.get('Nome', 'Usuário Sem Nome') == usuario_selecionado_nome:
+                if u.get('nome', 'Usuário Sem Nome') == usuario_selecionado_nome:
                     usuario_selecionado_email = u.get('email')
                     break
 
