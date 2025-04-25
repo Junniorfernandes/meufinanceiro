@@ -384,7 +384,7 @@ def pagina_login():
             st.session_state['autenticado'] = True
             st.session_state['usuario_atual_email'] = usuario_encontrado.get('email')
             st.session_state['usuario_atual_nome'] = usuario_encontrado.get('nome')
-            st.session_state['tipo_usuario_atual'] = usuario_encontrado.get('Tipo')
+            st.session_state['tipo_usuario_atual'] = usuario_encontrado.get('tipo')
 
             # Carrega as categorias de receita personalizadas do usuário logado
             usuario_categorias_receita = usuario_encontrado.get('categorias_receita', [])
