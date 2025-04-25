@@ -357,7 +357,7 @@ def pagina_login():
         # Uma abordagem melhor seria usar o módulo de autenticação do Supabase
         usuario_encontrado = None
         for i, usuario in enumerate(st.session_state.get('usuarios', [])):
-            if usuario.get('email') == email and usuario.get('Senha') == senha:
+            if usuario.get('email') == email and usuario.get('senha') == senha:
                 usuario_encontrado = usuario
                 st.session_state['usuario_atual_index'] = i # Mantém o índice local por compatibilidade, mas o ID do DB é melhor
                 break
