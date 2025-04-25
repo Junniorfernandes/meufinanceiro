@@ -357,14 +357,14 @@ def pagina_login():
         # Uma abordagem melhor seria usar o módulo de autenticação do Supabase
         usuario_encontrado = None
         for i, usuario in enumerate(st.session_state.get('usuarios', [])):
-            if usuario.get('Email') == email and usuario.get('Senha') == senha:
+            if usuario.get('email') == email and usuario.get('Senha') == senha:
                 usuario_encontrado = usuario
                 st.session_state['usuario_atual_index'] = i # Mantém o índice local por compatibilidade, mas o ID do DB é melhor
                 break
 
         if usuario_encontrado:
             st.session_state['autenticado'] = True
-            st.session_state['usuario_atual_email'] = usuario_encontrado.get('Email')
+            st.session_state['usuario_atual_email'] = usuario_encontrado.get('email')
             st.session_state['usuario_atual_nome'] = usuario_encontrado.get('Nome')
             st.session_state['tipo_usuario_atual'] = usuario_encontrado.get('Tipo')
 
@@ -582,7 +582,7 @@ def exibir_resumo_central():
             usuario_selecionado_email = None
             for u in st.session_state.get('usuarios', []):
                 if u.get('Nome', 'Usuário Sem Nome') == usuario_selecionado_nome:
-                    usuario_selecionado_email = u.get('Email')
+                    usuario_selecionado_email = u.get('email')
                     break
 
             if usuario_selecionado_email:
@@ -808,7 +808,7 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
     signatario_cargo = ""
     usuario_atual_email = st.session_state.get('usuario_atual_email')
     for u in st.session_state.get('usuarios', []):
-        if u.get('Email') == usuario_atual_email:
+        if u.get('email') == usuario_atual_email:
             signatario_nome = u.get("SignatarioNome", "")
             signatario_cargo = u.get("SignatarioCargo", "")
             break # Encontrou o usuário logado, pode sair do loop
@@ -1064,7 +1064,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     signatario_cargo = ""
     usuario_atual_email = st.session_state.get('usuario_atual_email')
     for u in st.session_state.get('usuarios', []):
-        if u.get('Email') == usuario_atual_email:
+        if u.get('email') == usuario_atual_email:
             signatario_nome = u.get("SignatarioNome", "")
             signatario_cargo = u.get("SignatarioCargo", "")
             break # Encontrou o usuário logado
@@ -1166,7 +1166,7 @@ def exibir_lancamentos():
             usuario_selecionado_email = None
             for u in st.session_state.get('usuarios', []):
                 if u.get('Nome', 'Usuário Sem Nome') == usuario_selecionado_nome:
-                    usuario_selecionado_email = u.get('Email')
+                    usuario_selecionado_email = u.get('email')
                     break
 
             if usuario_selecionado_email:
@@ -1434,7 +1434,7 @@ def pagina_configuracoes():
     usuario_logado = None
     usuario_logado_id = None
     for u in st.session_state.get('usuarios', []):
-        if u.get('Email') == usuario_logado_email:
+        if u.get('email') == usuario_logado_email:
             usuario_logado = u
             usuario_logado_id = u.get('id') # Pega o ID do Supabase
             break
@@ -1445,7 +1445,7 @@ def pagina_configuracoes():
     if usuario_logado:
         st.subheader(f"Editar Meu Perfil ({usuario_logado.get('Tipo', 'Tipo Desconhecido')})")
         edit_nome_proprio = st.text_input("Nome", usuario_logado.get('Nome', ''), key="edit_meu_nome")
-        st.text_input("E-mail", usuario_logado.get('Email', ''), disabled=True)
+        st.text_input("E-mail", usuario_logado.get('email', ''), disabled=True)
         nova_senha_propria = st.text_input("Nova Senha (deixe em branco para manter)", type="password", value="",
                                             key="edit_minha_nova_senha")
         confirmar_nova_senha_propria = st.text_input("Confirmar Nova Senha", type="password", value="",
@@ -1575,7 +1575,7 @@ def pagina_configuracoes():
                         if not novo_nome or not novo_email or not nova_senha or not novo_tipo:
                             st.warning("Por favor, preencha todos os campos para o novo usuário.")
                         # Verifica se o email já existe na lista carregada do Supabase
-                        elif any(u.get('Email') == novo_email for u in st.session_state.get('usuarios', [])):
+                        elif any(u.get('email') == novo_email for u in st.session_state.get('usuarios', [])):
                             st.warning(f"E-mail '{novo_email}' já cadastrado.")
                         else:
                             # --- ADAPTAÇÃO SUPABASE: Salvar novo usuário no DB ---
