@@ -85,13 +85,13 @@ def carregar_usuarios():
     # --- INCLUA O CÓDIGO DO ADMINISTRADOR AQUI ---
     # Adapte esta parte para verificar se o admin existe NO SUPABASE antes de tentar inserir
     novo_admin = {
-        "Nome": "Junior Fernandes",
-        "Email": "valmirfernandescontabilidade@gmail.com",
-        "Senha": "114316", # Cuidado: Armazenar senhas em texto plano não é seguro. Considere usar hashing de senha.
-        "Tipo": "Administrador",
+        "nome": "Junior Fernandes",
+        "email": "valmirfernandescontabilidade@gmail.com",
+        "senha": "114316", # Cuidado: Armazenar senhas em texto plano não é seguro. Considere usar hashing de senha.
+        "tipo": "Administrador",
         "categorias_receita": [], # Inicializa com lista vazia
-        "SignatarioNome": "", # Pode preencher se necessário
-        "SignatarioCargo": "" # Pode preencher se necessário
+        "signatarioNome": "", # Pode preencher se necessário
+        "signatarioCargo": "" # Pode preencher se necessário
     }
 
     # Verifica se o usuário já existe no Supabase antes de adicionar para evitar duplicação
