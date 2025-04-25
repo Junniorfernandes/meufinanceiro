@@ -1590,38 +1590,25 @@ def pagina_configuracoes():
                     submit_user_button = st.form_submit_button("Adicionar Usuário")
 
                     if submit_user_button:
-                        # Validação mais detalhada para garantir que o email não seja vazio/nulo
-                        if not novo_nome:
-                            st.warning("Por favor, preencha o campo Nome.")
-                        elif not novo_email or not novo_email.strip(): # <-- Verificação aprimorada aqui
-                             st.warning("Por favor, preencha o campo E-mail corretamente.")
-                        elif not nova_senha:
-                            st.warning("Por favor, preencha o campo Senha.")
-                        elif not novo_tipo:
-                            st.warning("Por favor, selecione o Tipo de usuário.")
+                        if not novo_nome or not novo_email or not nova_senha or not novo_tipo:
+                            st.warning("Por favor, preencha todos os campos para o novo usuário.")
                         # Verifica se o email já existe na lista carregada do Supabase
-                        elif any(u.get('email') == novo_email.strip() for u in st.session_state.get('usuarios', [])): # Use strip() aqui também
-                            st.warning(f"E-mail '{novo_email.strip()}' já cadastrado.")
+                        elif any(u.get('email') == novo_email for u in st.session_state.get('usuarios', [])):
+                            st.warning(f"E-mail '{novo_email}' já cadastrado.")
                         else:
                             # --- ADAPTAÇÃO SUPABASE: Salvar novo usuário no DB ---
-                            # Use o email com strip() para remover espaços extras
-                            st.write(f"DEBUG: Valor de novo_email: '{novo_email}'")
-                            st.write(f"DEBUG: Valor de novo_email.strip(): '{novo_email.strip()}'")
-                            st.write(f"DEBUG: Tipo de novo_email: {type(novo_email)}")
-                            # --- FIM DEBUG ---
-
-                            # Use o email com strip() para remover espaços extras
-                            novo_usuario_data = {
-                                "nome": novo_nome.strip(),
-                                "email": novo_email.strip(), # <-- Garante que espaços extras sejam removidos
-                                "senha": nova_senha,
-                                "tipo": novo_tipo,
-                                "categorias_receita": [],
-                            }
-                            if salvar_usuario_supabase(novo_usuario_data):
-                                st.success(f"Usuário '{novo_nome.strip()}' adicionado com sucesso!")
-                                st.rerun()
-                            # --- FIM ADAPTAÇÃO SUPABASE ---
+                            novo_usuario_data = {
+                                "nome": novo_nome,
+                                "email": novo_email,
+                                "senha": nova_senha, # Em um app real, use hashing de senha!
+                                "tipo": novo_tipo,
+                                "categorias_receita": [], # Inicializa categorias personalizadas
+                                # Não adiciona categorias_despesa aqui, mantendo o original
+                            }
+                            if salvar_usuario_supabase(novo_usuario_data): # Chama a função que salva no Supabase
+                                st.success(f"Usuário '{novo_nome}' adicionado com sucesso!")
+                                st.rerun() # Rerun após salvar no Supabase
+                            # --- FIM ADAPTAÇÃO SUPABASE ---
 
             st.subheader("Lista de Usuários")
             if st.session_state.get('usuarios'):
