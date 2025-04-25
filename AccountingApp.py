@@ -1620,7 +1620,7 @@ def pagina_configuracoes():
 
                 # Não liste o próprio usuário Admin logado para evitar que ele se exclua acidentalmente
                 usuarios_para_listar = [u for u in st.session_state.get('usuarios', []) if
-                                        u.get('Email') != usuario_logado_email]
+                                        u.get('email') != usuario_logado_email]
 
                 # --- ADAPTAÇÃO SUPABASE: Iterar sobre a lista carregada do DB e usar IDs ---
                 for i, usuario in enumerate(usuarios_para_listar):
@@ -1630,9 +1630,9 @@ def pagina_configuracoes():
                         continue # Pula usuários sem ID
 
                     col1, col2, col3, col4 = st.columns([3, 4, 2, 3])
-                    col1.write(usuario.get('Nome', ''))
-                    col2.write(usuario.get('Email', ''))
-                    col3.write(usuario.get('Tipo', ''))
+                    col1.write(usuario.get('nome', ''))
+                    col2.write(usuario.get('email', ''))
+                    col3.write(usuario.get('tipo', ''))
 
                     with col4:
                         col_edit_user, col_del_user = st.columns(2)
@@ -1644,7 +1644,7 @@ def pagina_configuracoes():
                                 st.rerun()
                         with col_del_user:
                             # Só permite excluir se não for o usuário logado
-                            if usuario.get('Email') != usuario_logado_email:
+                            if usuario.get('email') != usuario_logado_email:
                                 # --- ADAPTAÇÃO SUPABASE: Chamar a função de exclusão do DB ---
                                 if st.button("Excluir", key=f"del_user_{user_id}", help="Excluir este usuário"): # Usa o ID do Supabase para o key
                                     if excluir_usuario_db(user_id): # Chama a função que exclui no Supabase
