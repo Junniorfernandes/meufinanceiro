@@ -1605,17 +1605,23 @@ def pagina_configuracoes():
                         else:
                             # --- ADAPTAÇÃO SUPABASE: Salvar novo usuário no DB ---
                             # Use o email com strip() para remover espaços extras
-                            novo_usuario_data = {
-                                "nome": novo_nome.strip(), # Opcional: remover espaços do nome também
-                                "email": novo_email.strip(), # <-- Garante que espaços extras sejam removidos
-                                "senha": nova_senha, # Em um app real, use hashing de senha!
-                                "tipo": novo_tipo,
-                                "categorias_receita": [],
-                            }
-                            if salvar_usuario_supabase(novo_usuario_data):
-                                st.success(f"Usuário '{novo_nome.strip()}' adicionado com sucesso!")
-                                st.rerun()
-                            # --- FIM ADAPTAÇÃO SUPABASE ---
+                            st.write(f"DEBUG: Valor de novo_email: '{novo_email}'")
+                            st.write(f"DEBUG: Valor de novo_email.strip(): '{novo_email.strip()}'")
+                            st.write(f"DEBUG: Tipo de novo_email: {type(novo_email)}")
+                            # --- FIM DEBUG ---
+
+                            # Use o email com strip() para remover espaços extras
+                            novo_usuario_data = {
+                                "nome": novo_nome.strip(),
+                                "email": novo_email.strip(), # <-- Garante que espaços extras sejam removidos
+                                "senha": nova_senha,
+                                "tipo": novo_tipo,
+                                "categorias_receita": [],
+                            }
+                            if salvar_usuario_supabase(novo_usuario_data):
+                                st.success(f"Usuário '{novo_nome.strip()}' adicionado com sucesso!")
+                                st.rerun()
+                            # --- FIM ADAPTAÇÃO SUPABASE ---
 
             st.subheader("Lista de Usuários")
             if st.session_state.get('usuarios'):
