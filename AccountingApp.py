@@ -188,17 +188,16 @@ def salvar_lancamento_supabase(lancamento_data):
             #     del lancamento_data['id']
             response = supabase.table("lancamentos").insert(lancamento_data).execute()
 
-        if response.error:
+        # Verifica se a resposta possui o atributo 'error' E se há um erro reportado
+        if hasattr(response, 'error') and response.error:
             st.error(f"Erro ao salvar lançamento no Supabase: {response.error.message}")
             return False # Indica falha
         else:
+            # Se não há atributo 'error' ou o erro é None, considera sucesso (ou um tipo diferente de resposta)
             st.success("Lançamento salvo com sucesso!")
             # Após salvar, recarregue a lista de lançamentos para refletir a mudança
             carregar_lancamentos() # Recarrega todos os lançamentos
             return True # Indica sucesso
-    except Exception as e:
-        st.error(f"Erro na operação de salvar lançamento: {e}")
-        return False # Indica falha
 
 
 def excluir_lancamento_db(lancamento_id):
