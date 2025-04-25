@@ -176,7 +176,7 @@ def carregar_lancamentos():
 def salvar_lancamento_supabase(lancamento_data):
     # Esta função é genérica para inserir ou atualizar lançamentos.
     # Se lancamento_data tiver 'id', tenta atualizar. Caso contrário, insere.
-    try:
+    try: # <-- Início do bloco try
         if 'id' in lancamento_data and lancamento_data['id'] is not None:
             # É uma atualização
             lancamento_id = lancamento_data.pop('id') # Remove o 'id' dos dados para a atualização
@@ -198,6 +198,9 @@ def salvar_lancamento_supabase(lancamento_data):
             # Após salvar, recarregue a lista de lançamentos para refletir a mudança
             carregar_lancamentos() # Recarrega todos os lançamentos
             return True # Indica sucesso
+    except Exception as e: # <-- O bloco except que precisa estar aqui, alinhado com o try
+        st.error(f"Erro na operação de salvar lançamento: {e}")
+        return False # Indica falha
 
 
 def excluir_lancamento_db(lancamento_id):
