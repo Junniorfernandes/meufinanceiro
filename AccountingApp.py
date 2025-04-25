@@ -7,6 +7,21 @@ import matplotlib.pyplot as plt
 import io
 import uuid
 from fpdf import FPDF
+from supabase import create_client, Client # --- ADAPTAÇÃO SUPABASE ---
+
+# --- ADAPTAÇÃO SUPABASE ---
+# Carregar credenciais do Supabase de .streamlit/secrets.toml
+# Certifique-se que este arquivo existe e contém SUPABASE_URL e SUPABASE_KEY
+try:
+    url: str = st.secrets["SUPABASE_URL"]
+    key: str = st.secrets["SUPABASE_KEY"]
+    supabase: Client = create_client(url, key)
+    st.success("Conectado ao Supabase!") # Mensagem de confirmação (opcional)
+except Exception as e:
+    st.error(f"Erro ao conectar ao Supabase: {e}")
+    st.stop() # Para a execução se não conseguir conectar
+# --- FIM ADAPTAÇÃO SUPABASE ---
+
 
 # --- Estilo CSS para os botões de navegação ---
 st.markdown(
@@ -16,7 +31,8 @@ st.markdown(
         background-color: #f0f2f6; /* Cor de fundo clara */
         color: #262730; /* Cor do texto escura */
         border-radius: 8px; /* Cantos arredondados */
-        border: 1px solid #d4d7de; /* Borda sutil */
+        border: 1px solid #d4d7de; /* Borda
+    sutil */
         padding: 8px 16px; /* Espaçamento interno */
         font-weight: bold; /* Texto em negrito */
         display: inline-flex; /* Alinha os itens inline */
@@ -44,84 +60,170 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-DATA_FILE = "lancamentos.json"
-USUARIOS_FILE = "usuarios.json"
+# --- REMOVENDO ARQUIVOS LOCAIS ---
+# DATA_FILE = "lancamentos.json" # Removido
+# USUARIOS_FILE = "usuarios.json" # Removido
+# CATEGORIAS_FILE = "categorias.json" # Já removido no original
 
+# --- Funções de Carregamento e Salvamento (AGORA USANDO SUPABASE) ---
 
-# CATEGORIAS_FILE = "categorias.json" # Não precisamos mais deste arquivo
-
-# --- Funções de Carregamento e Salvamento ---
-
-def salvar_usuarios():
-    with open(USUARIOS_FILE, "w") as f:
-        json.dump(st.session_state.get('usuarios', []), f)
-
-
+# --- ADAPTAÇÃO SUPABASE: Funções de Usuários ---
 def carregar_usuarios():
-    if os.path.exists(USUARIOS_FILE):
-        try:
-            with open(USUARIOS_FILE, "r") as f:
-                content = f.read()
-                if content:
-                    usuarios = json.loads(content)
-                    # Garante que cada usuário tem a lista de categorias (originalmente só tinha receita)
-                    for usuario in usuarios:
-                        if 'categorias_receita' not in usuario:
-                            usuario['categorias_receita'] = []
-                        # Mantendo a estrutura original do seu código que não tinha categorias de despesa no usuário
-                    st.session_state['usuarios'] = usuarios
-                else:
-                    st.session_state['usuarios'] = []
-        except json.JSONDecodeError:
-            st.error("Erro ao decodificar o arquivo de usuários. Criando um novo.")
-            st.session_state['usuarios'] = []
-            salvar_usuarios()
-    else:
-        st.session_state['usuarios'] = []
-        
-     # --- INCLUA O CÓDIGO DO ADMINISTRADOR AQUI ---
+    # Tenta buscar todos os usuários da tabela 'usuarios'
+    try:
+        response = supabase.table("usuarios").select("*").execute()
+        # A resposta do Supabase vem em response.data
+        st.session_state['usuarios'] = response.data if response.data else []
+        # Garante que cada usuário tem a lista de categorias (se a coluna jsonb for nula no DB, retorna None)
+        for usuario in st.session_state['usuarios']:
+            if 'categorias_receita' not in usuario or usuario['categorias_receita'] is None:
+                 usuario['categorias_receita'] = []
+    except Exception as e:
+        st.error(f"Erro ao carregar usuários do Supabase: {e}")
+        st.session_state['usuarios'] = [] # Define como lista vazia em caso de erro
+
+    # --- INCLUA O CÓDIGO DO ADMINISTRADOR AQUI ---
+    # Adapte esta parte para verificar se o admin existe NO SUPABASE antes de tentar inserir
     novo_admin = {
         "Nome": "Junior Fernandes",
         "Email": "valmirfernandescontabilidade@gmail.com",
         "Senha": "114316", # Cuidado: Armazenar senhas em texto plano não é seguro. Considere usar hashing de senha.
         "Tipo": "Administrador",
-        "categorias_receita": [],
+        "categorias_receita": [], # Inicializa com lista vazia
         "SignatarioNome": "", # Pode preencher se necessário
         "SignatarioCargo": "" # Pode preencher se necessário
     }
 
-    # Verifica se o usuário já existe antes de adicionar para evitar duplicação
-    if not any(u.get('Email') == novo_admin['Email'] for u in st.session_state.get('usuarios', [])):
-        st.session_state['usuarios'].append(novo_admin)
-        salvar_usuarios() # Salva a lista atualizada de usuários de volta no arquivo
-    # --- FIM DA INCLUSÃO ---
+    # Verifica se o usuário já existe no Supabase antes de adicionar para evitar duplicação
+    admin_existente = any(u.get('Email') == novo_admin['Email'] for u in st.session_state.get('usuarios', []))
+
+    if not admin_existente:
+        try:
+            # Insere o novo admin no Supabase
+            response = supabase.table("usuarios").insert(novo_admin).execute()
+            if response.error:
+                 st.error(f"Erro ao adicionar usuário administrador inicial: {response.error.message}")
+            else:
+                st.success("Usuário administrador inicial adicionado com sucesso!")
+                # Após adicionar, recarregue a lista de usuários para incluir o novo admin
+                carregar_usuarios()
+        except Exception as e:
+             st.error(f"Erro na operação de inserção do administrador: {e}")
+
+    # --- FIM DA INCLUSÃO DO ADMIN ---
 
 
-def salvar_lancamentos():
-    with open(DATA_FILE, "w") as f:
-        json.dump(st.session_state.get("lancamentos", []), f)
+def salvar_usuario_supabase(usuario_data):
+    # Esta função é genérica para inserir ou atualizar.
+    # Se usuario_data tiver 'id', tenta atualizar. Caso contrário, insere.
+    try:
+        if 'id' in usuario_data and usuario_data['id'] is not None:
+            # É uma atualização
+            user_id = usuario_data.pop('id') # Remove o 'id' dos dados para a atualização
+            response = supabase.table("usuarios").update(usuario_data).eq("id", user_id).execute()
+        else:
+            # É uma inserção
+            response = supabase.table("usuarios").insert(usuario_data).execute()
 
+        if response.error:
+            st.error(f"Erro ao salvar usuário no Supabase: {response.error.message}")
+            return False # Indica falha
+        else:
+            # Após salvar, recarregue a lista de usuários para refletir a mudança
+            carregar_usuarios()
+            return True # Indica sucesso
+    except Exception as e:
+        st.error(f"Erro na operação de salvar usuário: {e}")
+        return False # Indica falha
+
+
+def excluir_usuario_db(user_id):
+    # Esta função exclui um usuário baseado no ID do Supabase
+    try:
+        response = supabase.table("usuarios").delete().eq("id", user_id).execute()
+        if response.error:
+            st.error(f"Erro ao excluir usuário do Supabase: {response.error.message}")
+            return False # Indica falha
+        else:
+            st.success("Usuário excluído com sucesso!")
+            # Após excluir, recarregue a lista de usuários
+            carregar_usuarios()
+            return True # Indica sucesso
+    except Exception as e:
+        st.error(f"Erro na operação de exclusão do usuário: {e}")
+        return False # Indica falha
+
+# --- ADAPTAÇÃO SUPABASE: Funções de Lançamentos ---
 
 def carregar_lancamentos():
-    if os.path.exists(DATA_FILE):
-        try:
-            with open(DATA_FILE, "r") as f:
-                content = f.read()
-                if content:
-                    st.session_state["lancamentos"] = json.loads(content)
-                else:
-                    st.session_state["lancamentos"] = []
-        except json.JSONDecodeError:
-            st.error("Erro ao decodificar o arquivo de lançamentos. Criando um novo.")
-            st.session_state["lancamentos"] = []
-            salvar_lancamentos()
-    else:
-        st.session_state["lancamentos"] = []
+    # Busca todos os lançamentos. A filtragem por usuário e data será feita localmente ou na query mais tarde.
+    try:
+        response = supabase.table("lancamentos").select("*").execute()
+        st.session_state["lancamentos"] = response.data if response.data else []
+        # Adiciona um ID temporário se não existir (para compatibilidade inicial, mas o Supabase já deve fornecer)
+        # Certifique-se que sua tabela 'lancamentos' no Supabase tem um campo 'id' UUID gerado por padrão
+        for lancamento in st.session_state["lancamentos"]:
+            if 'id' not in lancamento or lancamento['id'] is None:
+                 # Isso não deve acontecer se o Supabase estiver configurado corretamente
+                 lancamento['id'] = str(uuid.uuid4()) # Cria um ID temporário (NÃO IDEAL)
+                 st.warning("Alguns lançamentos não têm ID do Supabase. Considere corrigir a estrutura da tabela.")
+
+    except Exception as e:
+        st.error(f"Erro ao carregar lançamentos do Supabase: {e}")
+        st.session_state["lancamentos"] = [] # Define como lista vazia em caso de erro
+
+
+def salvar_lancamento_supabase(lancamento_data):
+    # Esta função é genérica para inserir ou atualizar lançamentos.
+    # Se lancamento_data tiver 'id', tenta atualizar. Caso contrário, insere.
+    try:
+        if 'id' in lancamento_data and lancamento_data['id'] is not None:
+            # É uma atualização
+            lancamento_id = lancamento_data.pop('id') # Remove o 'id' dos dados para a atualização
+            response = supabase.table("lancamentos").update(lancamento_data).eq("id", lancamento_id).execute()
+        else:
+            # É uma inserção
+            # Remova o ID temporário se ele existir e não for do Supabase (cuidado aqui!)
+            # if 'id' in lancamento_data:
+            #     del lancamento_data['id']
+            response = supabase.table("lancamentos").insert(lancamento_data).execute()
+
+        if response.error:
+            st.error(f"Erro ao salvar lançamento no Supabase: {response.error.message}")
+            return False # Indica falha
+        else:
+            st.success("Lançamento salvo com sucesso!")
+            # Após salvar, recarregue a lista de lançamentos para refletir a mudança
+            carregar_lancamentos() # Recarrega todos os lançamentos
+            return True # Indica sucesso
+    except Exception as e:
+        st.error(f"Erro na operação de salvar lançamento: {e}")
+        return False # Indica falha
+
+
+def excluir_lancamento_db(lancamento_id):
+    # Esta função exclui um lançamento baseado no ID do Supabase
+    try:
+        response = supabase.table("lancamentos").delete().eq("id", lancamento_id).execute()
+        if response.error:
+            st.error(f"Erro ao excluir lançamento do Supabase: {response.error.message}")
+            return False # Indica falha
+        else:
+            st.success("Lançamento excluído com sucesso!")
+            # Após excluir, recarregue a lista de lançamentos
+            carregar_lancamentos() # Recarrega todos os lançamentos
+            return True # Indica sucesso
+    except Exception as e:
+        st.error(f"Erro na operação de exclusão do lançamento: {e}")
+        return False # Indica falha
+
+# --- FIM ADAPTAÇÃO SUPABASE: Funções de Lançamentos e Usuários ---
 
 
 # --- Inicialização de Estado ---
+# A ordem de carregamento pode importar se usuários e lançamentos têm dependência
 if 'usuarios' not in st.session_state:
-    carregar_usuarios()
+    carregar_usuarios() # Carrega usuários do Supabase ao iniciar
 if 'pagina_atual' not in st.session_state:
     st.session_state['pagina_atual'] = 'dashboard'
 if 'autenticado' not in st.session_state:
@@ -133,7 +235,7 @@ if 'usuario_atual_nome' not in st.session_state:
 if 'tipo_usuario_atual' not in st.session_state:
     st.session_state['tipo_usuario_atual'] = None
 if 'usuario_atual_index' not in st.session_state:
-    st.session_state['usuario_atual_index'] = None
+    st.session_state['usuario_atual_index'] = None # Este índice pode ser menos relevante agora com IDs do DB
 
 # Variáveis de estado para controlar a exibição dos "popups"
 if 'show_add_modal' not in st.session_state:
@@ -141,25 +243,25 @@ if 'show_add_modal' not in st.session_state:
 if 'show_edit_modal' not in st.session_state:
     st.session_state['show_edit_modal'] = False
 if 'editar_indice' not in st.session_state:
-    st.session_state['editar_indice'] = None
+    st.session_state['editar_indice'] = None # Usaremos o ID do Supabase agora, não o índice da lista local
 if 'editar_lancamento' not in st.session_state:
     st.session_state['editar_lancamento'] = None
 if 'editar_usuario_index' not in st.session_state:
-    st.session_state['editar_usuario_index'] = None
+    st.session_state['editar_usuario_index'] = None # Usaremos o ID do Supabase agora para usuários
 if 'editar_usuario_data' not in st.session_state:
     st.session_state['editar_usuario_data'] = None
 
-# Carrega os lançamentos ao iniciar o app
+
+# Carrega os lançamentos ao iniciar o app (DO SUPABASE)
 carregar_lancamentos()
 if "lancamentos" not in st.session_state:
-    st.session_state["lancamentos"] = []
+    st.session_state["lancamentos"] = [] # Já tratado em carregar_lancamentos
 
 # Define as categorias padrão de receita (conforme seu código original)
 CATEGORIAS_PADRAO_RECEITA = ["Serviços", "Vendas"]
 # O código original não tinha categorias padrão de despesa ou gestão delas por usuário.
 # A Demonstração de Resultados agrupará despesas pelo campo 'Categorias' existente,
 # mas sem gestão específica de categorias de despesa no UI.
-
 # Inicializa a lista de categorias disponíveis para o usuário logado (será atualizada no login)
 if 'todas_categorias_receita' not in st.session_state:
     st.session_state['todas_categorias_receita'] = CATEGORIAS_PADRAO_RECEITA.copy()  # Começa com as padrão
@@ -167,20 +269,34 @@ if 'todas_categorias_receita' not in st.session_state:
 
 # Mantendo a estrutura original que não tinha 'todas_categorias_despesa' no estado
 
-def excluir_usuario(index):
+# --- ADAPTAÇÃO SUPABASE: Excluir Usuário ---
+def excluir_usuario(index_local): # Mantive o nome da função, mas a lógica interna mudou
     # Antes de excluir o usuário, podemos verificar se há lançamentos associados
     # e decidir o que fazer (excluir lançamentos, reatribuir, etc.).
-    # Por simplicidade, vamos apenas excluir o usuário por enquanto.
-    del st.session_state['usuarios'][index]
-    salvar_usuarios()
-    st.success("Usuário excluído com sucesso!")
-    st.rerun()
+    # Por simplicidade, vamos apenas excluir o usuário do DB.
+
+    # Encontre o ID do usuário na lista atual do session_state (carregada do DB)
+    if 0 <= index_local < len(st.session_state.get('usuarios', [])):
+        user_to_delete = st.session_state['usuarios'][index_local]
+        user_id = user_to_delete.get('id') # Pega o ID do Supabase
+
+        if user_id:
+            excluir_usuario_db(user_id) # Chama a função que exclui no Supabase
+            # A função excluir_usuario_db já recarrega a lista de usuários no session_state
+        else:
+             st.error("ID do usuário não encontrado para exclusão.")
+    else:
+         st.error("Índice de usuário inválido para exclusão.")
+
+    st.rerun() # Rerun após a operação de exclusão
+
+# --- FIM ADAPTAÇÃO SUPABASE: Excluir Usuário ---
 
 
 def pagina_login():
     # Escolhe o logo com base no tema carregado
     theme_base = st.get_option("theme.base")
-    logo_path = "logo_dark.png" if theme_base == "dark" else "logo_light.png"
+    logo_path = "logo_dark.png" if theme_base == "dark" else "logo_light.png" # Certifique-se que estes arquivos existem
     st.image(logo_path, width=200)
 
     st.title("Junior Fernandes")
@@ -202,13 +318,18 @@ def pagina_login():
                 background-color: #003548; /* Cor de fundo padrão */
                 color: #ffffff; /* Cor do texto padrão */
                 border-radius: 8px;
-                border: none;
+    border: none;
                 cursor: pointer; /* Adiciona cursor de mão para indicar que é clicável */
-                text-align: center; /* Centraliza o texto */
-                text-decoration: none; /* Remove sublinhado do link se aplicado ao a */
-                display: inline-block; /* Necessário para aplicar padding e width corretamente */
-                font-size: 16px; /* Opcional: define um tamanho de fonte */
-                transition: background-color 0.3s ease; /* Transição suave para o hover */
+                text-align: center;
+    /* Centraliza o texto */
+                text-decoration: none;
+    /* Remove sublinhado do link se aplicado ao a */
+                display: inline-block;
+    /* Necessário para aplicar padding e width corretamente */
+                font-size: 16px;
+    /* Opcional: define um tamanho de fonte */
+                transition: background-color 0.3s ease;
+    /* Transição suave para o hover */
             }
 
             /* Define os estilos para quando o mouse estiver sobre o botão */
@@ -231,23 +352,32 @@ def pagina_login():
         login_button = st.button("Acessar meu financeiro", key="botao_entrar_login")
 
     if login_button:
+        # --- ADAPTAÇÃO SUPABASE: Autenticação ---
+        # Busca o usuário pelo email e verifica a senha localmente (AINDA INSEGURO PELA SENHA EM TEXTO PLANO)
+        # Uma abordagem melhor seria usar o módulo de autenticação do Supabase
+        usuario_encontrado = None
         for i, usuario in enumerate(st.session_state.get('usuarios', [])):
             if usuario.get('Email') == email and usuario.get('Senha') == senha:
-                st.session_state['autenticado'] = True
-                st.session_state['usuario_atual_email'] = usuario.get('Email')
-                st.session_state['usuario_atual_nome'] = usuario.get('Nome')
-                st.session_state['tipo_usuario_atual'] = usuario.get('Tipo')
-                st.session_state['usuario_atual_index'] = i
+                usuario_encontrado = usuario
+                st.session_state['usuario_atual_index'] = i # Mantém o índice local por compatibilidade, mas o ID do DB é melhor
+                break
 
-                usuario_categorias_receita = usuario.get('categorias_receita', [])
-                todas_unicas_receita = list(dict.fromkeys(CATEGORIAS_PADRAO_RECEITA + usuario_categorias_receita))
-                st.session_state['todas_categorias_receita'] = todas_unicas_receita
+        if usuario_encontrado:
+            st.session_state['autenticado'] = True
+            st.session_state['usuario_atual_email'] = usuario_encontrado.get('Email')
+            st.session_state['usuario_atual_nome'] = usuario_encontrado.get('Nome')
+            st.session_state['tipo_usuario_atual'] = usuario_encontrado.get('Tipo')
 
-                st.success(f"Login realizado com sucesso, {st.session_state['usuario_atual_nome']}!")
-                st.rerun()
-                return
+            # Carrega as categorias de receita personalizadas do usuário logado
+            usuario_categorias_receita = usuario_encontrado.get('categorias_receita', [])
+            todas_unicas_receita = list(dict.fromkeys(CATEGORIAS_PADRAO_RECEITA + usuario_categorias_receita))
+            st.session_state['todas_categorias_receita'] = todas_unicas_receita
 
-        st.error("E-mail ou senha incorretos.")
+            st.success(f"Login realizado com sucesso, {st.session_state['usuario_atual_nome']}!")
+            st.rerun()
+        else:
+            st.error("E-mail ou senha incorretos.")
+        # --- FIM ADAPTAÇÃO SUPABASE: Autenticação ---
 
 
 # --- Funções para Renderizar os Formulários (agora na área principal) ---
@@ -281,7 +411,6 @@ def render_add_lancamento_form():
                 )
             # Se o tipo não for Receita, o placeholder permanece vazio, e 'categorias' continua ""
             # Seu código original não tinha seleção de categoria para Despesa aqui.
-
             valor = st.number_input("Valor", format="%.2f", min_value=0.0, key="add_lanc_valor_form")
 
             # Botão de submissão DENTRO do formulário
@@ -295,6 +424,7 @@ def render_add_lancamento_form():
                     try:
                         data_obj = datetime.strptime(data_str, "%d/%m/%Y").strftime("%Y-%m-%d")
                         novo_lancamento = {
+                            # SUPABASE: O ID será gerado pelo Supabase na inserção, não inclua aqui.
                             "Data": data_obj,
                             "Descrição": descricao,
                             "Categorias": categorias,  # Salva a categoria (será vazia se não for Receita no original)
@@ -302,11 +432,11 @@ def render_add_lancamento_form():
                             "Valor": valor,
                             "user_email": st.session_state['usuario_atual_email']
                         }
-                        st.session_state["lancamentos"].append(novo_lancamento)
-                        salvar_lancamentos()
-                        st.success("Lançamento adicionado com sucesso!")
-                        st.session_state['show_add_modal'] = False
-                        st.rerun()
+                        # --- ADAPTAÇÃO SUPABASE: Salvar Lançamento ---
+                        if salvar_lancamento_supabase(novo_lancamento): # Chama a nova função que salva no Supabase
+                            st.session_state['show_add_modal'] = False
+                            st.rerun() # Rerun após salvar no Supabase
+                        # --- FIM ADAPTAÇÃO SUPABASE ---
                     except ValueError:
                         st.error("Formato de data inválido. Use DD/MM/AAAA.")
 
@@ -317,83 +447,83 @@ def render_add_lancamento_form():
 
 
 def render_edit_lancamento_form():
-    if not st.session_state.get('autenticado') or st.session_state.get('editar_indice') is None:
+    # --- ADAPTAÇÃO SUPABASE: Usando ID para editar ---
+    if not st.session_state.get('autenticado') or st.session_state.get('editar_lancamento') is None:
         return
 
-    indice = st.session_state["editar_indice"]
-    if indice is None or indice >= len(st.session_state.get('lancamentos', [])):
-        st.error("Lançamento a ser editado não encontrado ou inválido.")
-        st.session_state['editar_indice'] = None
-        st.session_state['editar_lancamento'] = None
-        st.session_state['show_edit_modal'] = False
-        st.rerun()
-        return
+    # O lancamento_a_editar agora é o dicionário completo do lançamento, incluindo o 'id' do Supabase
+    lancamento_a_editar = st.session_state.get('editar_lancamento')
+    lancamento_id = lancamento_a_editar.get('id')
 
-    lancamento_a_editar = st.session_state.get("lancamentos", [])[indice]
+    if lancamento_id is None:
+         st.error("ID do lançamento a ser editado não encontrado.")
+         st.session_state['editar_lancamento'] = None
+         st.session_state['show_edit_modal'] = False
+         st.rerun()
+         return
+
 
     is_owner = lancamento_a_editar.get('user_email') == st.session_state.get('usuario_atual_email')
     is_admin = st.session_state.get('tipo_usuario_atual') == 'Administrador'
 
     if not (is_owner or is_admin):
         st.error("Você não tem permissão para editar este lançamento.")
-        st.session_state['editar_indice'] = None
         st.session_state['editar_lancamento'] = None
         st.session_state['show_edit_modal'] = False
         st.rerun()
         return
 
     with st.expander("Editar Lançamento", expanded=True):
-        st.subheader(f"Editar Lançamento")
+        st.subheader(f"Editar Lançamento (ID: {lancamento_id})") # Mostra o ID para debug
 
         # O formulário contém os campos e o botão de submissão
-        with st.form(key=f"edit_lancamento_form_{indice}"):
-            lancamento = st.session_state["editar_lancamento"]
-
+        # Use o ID do lançamento no key do formulário para garantir unicidade
+        with st.form(key=f"edit_lancamento_form_{lancamento_id}"):
+            # Usa os dados do lancamento_a_editar para preencher o formulário
             data_str = st.text_input(
                 "Data (DD/MM/AAAA)",
-                datetime.strptime(lancamento.get("Data", '1900-01-01'), "%Y-%m-%d").strftime("%d/%m/%Y"),
-                key=f"edit_lanc_data_form_{indice}"
+                datetime.strptime(lancamento_a_editar.get("Data", '1900-01-01'), "%Y-%m-%d").strftime("%d/%m/%Y"),
+                key=f"edit_lanc_data_form_{lancamento_id}"
             )
-            descricao = st.text_input("Descrição", lancamento.get("Descrição", ""),
-                                      key=f"edit_lanc_descricao_form_{indice}")
+            descricao = st.text_input("Descrição", lancamento_a_editar.get("Descrição", ""),
+                                       key=f"edit_lanc_descricao_form_{lancamento_id}")
             # Captura o tipo de lançamento selecionado primeiro
             tipo = st.selectbox(
                 "Tipo de Lançamento",
                 ["Receita", "Despesa"],
-                index=["Receita", "Despesa"].index(lancamento.get("Tipo de Lançamento", "Receita")),
-                key=f"edit_lanc_tipo_form_{indice}",
+                index=["Receita", "Despesa"].index(lancamento_a_editar.get("Tipo de Lançamento", "Receita")),
+                key=f"edit_lanc_tipo_form_{lancamento_id}",
             )
 
             # Cria um placeholder para a Categoria
             categoria_placeholder = st.empty()
 
-            categoria = ""  # Inicializa a variável de categoria
+            categoria = "" # Inicializa a variável de categoria
             # Só exibe o campo Categoria dentro do placeholder se o tipo for Receita (conforme original)
             if tipo == "Receita":
                 # Encontra o índice da categoria atual na lista combinada do usuário logado
-                current_category = lancamento.get("Categorias", "")
+                current_category = lancamento_a_editar.get("Categorias", "")
                 # Usa a lista combinada de categorias do usuário logado para o selectbox
                 categorias_disponiveis = st.session_state.get('todas_categorias_receita', CATEGORIAS_PADRAO_RECEITA)
 
                 try:
                     default_index = categorias_disponiveis.index(current_category)
                 except ValueError:
-                    # Se a categoria salva não estiver na lista atual, use a primeira opção
+                     # Se a categoria salva não estiver na lista atual, use a primeira opção
                     default_index = 0
 
                 categoria = categoria_placeholder.selectbox(
                     "Categoria",
                     categorias_disponiveis,
                     index=default_index,
-                    key=f"edit_lanc_categoria_receita_form_{indice}",
+                    key=f"edit_lanc_categoria_receita_form_{lancamento_id}",
                 )
             # Seu código original não tinha seleção de categoria para Despesa na edição.
             # A Demonstração de Resultados usará o que estiver no campo 'Categorias' para Despesas,
             # mesmo que não haja um selectbox para definir isso na UI original.
-
             valor = st.number_input(
-                "Valor", value=lancamento.get("Valor", 0.0), format="%.2f", min_value=0.0,
-                key=f"edit_lanc_valor_form_{indice}"
+                "Valor", value=lancamento_a_editar.get("Valor", 0.0), format="%.2f", min_value=0.0,
+                key=f"edit_lanc_valor_form_{lancamento_id}"
             )
 
             # Botão de submissão DENTRO do formulário
@@ -406,29 +536,32 @@ def render_edit_lancamento_form():
                 else:
                     try:
                         data_obj = datetime.strptime(data_str, "%d/%m/%Y").strftime("%Y-%m-%d")
-                        st.session_state["lancamentos"][indice] = {
+                        # Cria um dicionário com os dados atualizados, incluindo o ID do Supabase
+                        lancamento_atualizado = {
+                            "id": lancamento_id, # Inclui o ID para a função de salvar/atualizar
                             "Data": data_obj,
                             "Descrição": descricao,
                             "Categorias": categoria,  # Salva a categoria (será vazia se não for Receita no original)
                             "Tipo de Lançamento": tipo,
                             "Valor": valor,
-                            "user_email": lancamento_a_editar.get('user_email')
+                            "user_email": lancamento_a_editar.get('user_email') # Mantém o email original do usuário
                         }
-                        salvar_lancamentos()
-                        st.success("Lançamento editado com sucesso!")
-                        st.session_state['editar_indice'] = None
-                        st.session_state['editar_lancamento'] = None
-                        st.session_state['show_edit_modal'] = False
-                        st.rerun()
+                        # --- ADAPTAÇÃO SUPABASE: Salvar Edição ---
+                        if salvar_lancamento_supabase(lancamento_atualizado): # Chama a função de salvar/atualizar no Supabase
+                            st.session_state['editar_lancamento'] = None
+                            st.session_state['show_edit_modal'] = False
+                            st.rerun() # Rerun após salvar no Supabase
+                        # --- FIM ADAPTAÇÃO SUPABASE ---
                     except ValueError:
                         st.error("Formato de data inválido. Use DD/MM/AAAA.")
 
         # Botão cancelar FORA do formulário
-        if st.button("Cancelar Edição", key=f"cancel_edit_form_button_{indice}"):
-            st.session_state['editar_indice'] = None
+        if st.button("Cancelar Edição", key=f"cancel_edit_form_button_{lancamento_id}"):
             st.session_state['editar_lancamento'] = None
             st.session_state['show_edit_modal'] = False
             st.rerun()
+    # --- FIM ADAPTAÇÃO SUPABASE: Usando ID para editar ---
+
 
 def exibir_resumo_central():
     st.subheader("Resumo Financeiro")
@@ -441,10 +574,11 @@ def exibir_resumo_central():
         usuario_selecionado_nome = st.session_state.get("selectbox_usuario_lancamentos", "Todos os Usuários")
 
         if usuario_selecionado_nome == "Todos os Usuários":
+            # Use a lista completa carregada do Supabase
             lancamentos_para_resumo = st.session_state.get("lancamentos", [])
             st.info("Exibindo resumo de todos os lançamentos.")
         else:
-            # Encontre o e-mail do usuário selecionado pelo nome
+            # Encontre o e-mail do usuário selecionado pelo nome na lista carregada do Supabase
             usuario_selecionado_email = None
             for u in st.session_state.get('usuarios', []):
                 if u.get('Nome', 'Usuário Sem Nome') == usuario_selecionado_nome:
@@ -452,7 +586,7 @@ def exibir_resumo_central():
                     break
 
             if usuario_selecionado_email:
-                # Filtra lançamentos pelo e-mail do usuário selecionado para o resumo
+                # Filtra lançamentos localmente pelo e-mail do usuário selecionado para o resumo
                 lancamentos_para_resumo = [
                     l for l in st.session_state.get("lancamentos", [])
                     if l.get('user_email') == usuario_selecionado_email
@@ -465,6 +599,7 @@ def exibir_resumo_central():
 
     else:  # Código existente para usuários não administradores
         usuario_email = st.session_state.get('usuario_atual_email')
+        # Filtra lançamentos localmente pelo e-mail do usuário logado
         lancamentos_para_resumo = [
             l for l in st.session_state.get("lancamentos", [])
             if l.get('user_email') == usuario_email
@@ -472,6 +607,9 @@ def exibir_resumo_central():
         st.info(f"Exibindo seus lançamentos, {st.session_state.get('usuario_atual_nome', 'usuário')}.")
 
     # --- Aplicar Filtro por Data ao Resumo ---
+    # A filtragem por data já foi aplicada na lista lancamentos_para_exibir na função exibir_lancamentos
+    # que é usada para popular a tabela. Aqui no resumo, vamos refiltrar a lista
+    # lancamentos_para_resumo com base nos filtros de data aplicados na seção de lançamentos.
     data_inicio_filtro = st.session_state.get("data_inicio_filtro")
     data_fim_filtro = st.session_state.get("data_fim_filtro")
 
@@ -497,7 +635,7 @@ def exibir_resumo_central():
             if l.get('Data') and l.get('Data') <= data_fim_str
         ]
 
-    # Agora, o resumo será calculado usando a lista filtrada por data
+    # Agora, o resumo será calculado usando a lista filtrada por data E por usuário
     lancamentos_para_resumo = lancamentos_para_resumo_filtrados
     # --- Fim do Filtro por Data ao Resumo ---
 
@@ -506,13 +644,13 @@ def exibir_resumo_central():
     total_receitas = 0
     total_despesas = 0
 
-    # Agora itera sobre a lista `lancamentos_para_resumo` (que agora inclui filtro por data)
+    # Agora itera sobre a lista `lancamentos_para_resumo` (que agora inclui filtro por data e usuário)
     for lancamento in lancamentos_para_resumo:
         # AS PRÓXIMAS DUAS CONDIÇÕES DEVEM ESTAR INDENTADAS ASSIM:
         if lancamento.get("Tipo de Lançamento") == "Receita":
             total_receitas += lancamento.get("Valor", 0)
         elif lancamento.get("Tipo de Lançamento") == "Despesa":
-            total_despesas += lancamento.get("Valor", 0)
+             total_despesas += lancamento.get("Valor", 0)
 
     # O CÓDIGO CONTINUA AQUI, FORA DO LOOP FOR, MAS DENTRO DA FUNÇÃO
     total_geral = total_receitas - total_despesas
@@ -561,13 +699,17 @@ def exibir_resumo_central():
     st.markdown("---")
 
 
-# Função para exportar lançamentos para Excel (mantida a original)
+# Função para exportar lançamentos para Excel (mantida a original, adaptada para o novo formato de dados)
 def exportar_lancamentos_para_excel(lancamentos_list):
     lancamentos_para_df = []
     for lancamento in lancamentos_list:
         lancamento_copy = lancamento.copy()
-        if 'user_email' in lancamento_copy:  # Mantendo a remoção do user_email para o Excel conforme original
+        # --- ADAPTAÇÃO SUPABASE: Remove o 'id' e 'user_email' se existirem antes de exportar ---
+        if 'id' in lancamento_copy:
+            del lancamento_copy['id']
+        if 'user_email' in lancamento_copy:
             del lancamento_copy['user_email']
+        # --- FIM ADAPTAÇÃO SUPABASE ---
         lancamentos_para_df.append(lancamento_copy)
 
     df = pd.DataFrame(lancamentos_para_df)
@@ -575,9 +717,10 @@ def exportar_lancamentos_para_excel(lancamentos_list):
     if not df.empty:
         if 'Data' in df.columns:
             try:
+                # As datas vêm como string 'YYYY-MM-DD' do Supabase, converte para datetime e depois para DD/MM/YYYY
                 df['Data'] = pd.to_datetime(df['Data']).dt.strftime('%d/%m/%Y')
             except Exception as e:
-                st.warning(f"Erro ao formatar a coluna 'Data' para exportação Excel: {e}")
+                 st.warning(f"Erro ao formatar a coluna 'Data' para exportação Excel: {e}")
 
         if 'Valor' in df.columns:
             try:
@@ -599,7 +742,7 @@ def exportar_lancamentos_para_excel(lancamentos_list):
         return None
 
 
-# Função para exportar lançamentos para PDF (lista detalhada) - Mantida a original
+# Função para exportar lançamentos para PDF (lista detalhada) - Mantida a original, adaptada para o novo formato de dados
 def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -608,8 +751,8 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
     # Tenta adicionar uma fonte que suporte acentos. Se não encontrar, usa Arial padrão.
     # Certifique-se de ter um arquivo .ttf (como Arial.ttf) no mesmo diretório do seu script.
     try:
-        pdf.add_font('Arial_Unicode', '',
-                     'Arial_Unicode.ttf')  # Substitua 'Arial_Unicode.ttf' pelo caminho ou nome do seu arquivo .ttf
+        # Substitua 'Arial_Unicode.ttf' pelo caminho ou nome do seu arquivo .ttf
+        pdf.add_font('Arial_Unicode', '', 'Arial_Unicode.ttf')
         pdf.set_font('Arial_Unicode', '', 12)
         font_for_table = 'Arial_Unicode'
     except Exception as e:
@@ -619,11 +762,12 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
 
     pdf.set_font("Arial", 'B', 12)  # Use negrito da fonte padrão para o título (conforme original)
     report_title = f"Relatório de Lançamentos - {usuario_nome}"
+    # Use 'latin1' para codificação no FPDF se estiver tendo problemas com acentos no PDF
     pdf.cell(0, 10, report_title.encode('latin1', 'replace').decode('latin1'), 0, 1, 'C')
     pdf.ln(10)
 
     # Usa a fonte com suporte a acentos (se carregada) ou a padrão para os cabeçalhos e dados da tabela
-    pdf.set_font(font_for_table, 'B', 10)  # Cabeçalhos em negrito
+    pdf.set_font(font_for_table, 'B', 10) # Cabeçalhos em negrito
     col_widths = [20, 90, 40, 20, 25]
     headers = ["Data", "Descrição", "Categoria", "Tipo", "Valor"]
 
@@ -634,9 +778,10 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
     pdf.set_font(font_for_table, '', 10)  # Dados da tabela em fonte normal
     for lancamento in lancamentos_list:
         try:
+            # Datas vêm do Supabase como 'YYYY-MM-DD', formatar para DD/MM/YYYY
             data_formatada = datetime.strptime(lancamento.get("Data", '1900-01-01'), "%Y-%m-%d").strftime("%d/%m/%Y")
         except ValueError:
-            data_formatada = lancamento.get("Data", "Data Inválida")
+            data_formatada = lancamento.get("Data", "Data Inválida") # Mantém o valor original se a conversão falhar
 
         descricao = lancamento.get("Descrição", "")
         categoria = lancamento.get("Categorias", "")
@@ -658,19 +803,25 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
     pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
     pdf.ln(5)
 
-    signatario_nome = st.session_state.get('usuarios', [])[st.session_state.get('usuario_atual_index', 0)].get(
-        "SignatarioNome", "")
-    signatario_cargo = st.session_state.get('usuarios', [])[st.session_state.get('usuario_atual_index', 0)].get(
-        "SignatarioCargo", "")
+    # --- ADAPTAÇÃO SUPABASE: Buscar dados do signatário da lista de usuários carregada do DB ---
+    signatario_nome = ""
+    signatario_cargo = ""
+    usuario_atual_email = st.session_state.get('usuario_atual_email')
+    for u in st.session_state.get('usuarios', []):
+        if u.get('Email') == usuario_atual_email:
+            signatario_nome = u.get("SignatarioNome", "")
+            signatario_cargo = u.get("SignatarioCargo", "")
+            break # Encontrou o usuário logado, pode sair do loop
+    # --- FIM ADAPTAÇÃO SUPABASE ---
 
     if signatario_nome or signatario_cargo:
         pdf.set_font("Arial", '', 10) #(If I want to use bold font)pdf.set_font("Arial", 'B', 12)
 
         if signatario_nome:
-            pdf.cell(0, 10, f"Assinado por: {signatario_nome}", 0, 1, 'C')
+            pdf.cell(0, 10, f"Assinado por: {signatario_nome}".encode('latin1', 'replace').decode('latin1'), 0, 1, 'C')
 
         if signatario_cargo:
-            pdf.cell(0, 8, signatario_cargo, 0, 1, 'C')
+            pdf.cell(0, 8, signatario_cargo.encode('latin1', 'replace').decode('latin1'), 0, 1, 'C')
 
     pdf_output = pdf.output(dest='S')
     return io.BytesIO(pdf_output.encode('latin1')) # No Github adicionar: .encode('latin1'))
@@ -695,7 +846,7 @@ def criar_grafico_donut(receitas_por_categoria):
         colors=cores_personalizadas
     )
 
-       # Customiza o texto das labels (categorias como “Dízimos”)
+    # Customiza o texto das labels (categorias como “Dízimos”)
     for text in texts:
         text.set_color('black')       # Cor do texto da categoria
         text.set_fontsize(14)         # Tamanho da fonte da categoria
@@ -717,6 +868,7 @@ def criar_grafico_donut(receitas_por_categoria):
     return temp_filename
 
 # --- FUNÇÃO para gerar a Demonstração de Resultados em PDF ---
+# Mantida a original, usa a lista de lançamentos filtrada por data e usuário
 def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário"):
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -733,12 +885,12 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
         pdf.set_font("Arial", '', 12)
         font_for_text = 'Arial'
 
-    pdf.set_font(font_for_text, 'B', 14)  # Título principal com fonte negrito
+    pdf.set_font(font_for_text, 'B', 14) # Título principal com fonte negrito
     report_title = f"Demonstração de Resultados - {usuario_nome}"
     pdf.cell(0, 10, report_title.encode('latin1', 'replace').decode('latin1'), 0, 1, 'C')
     pdf.ln(10)
 
-    # --- Processar dados para a Demonstração de Resultados ---
+    # --- Processar dados para a Demonstração de Resultados (usa a lista filtrada) ---
     receitas_por_categoria = {}
     despesas_por_categoria = {}
     total_receitas = 0
@@ -754,19 +906,20 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
             if categoria not in receitas_por_categoria:
                 receitas_por_categoria[categoria] = 0
             receitas_por_categoria[categoria] += valor
-            total_receitas += valor
+            total_receitas += valor # Movido para dentro do if Receita para somar apenas receitas
         elif tipo == "Despesa":
             if categoria not in despesas_por_categoria:
                 despesas_por_categoria[categoria] = 0
             despesas_por_categoria[categoria] += valor
-            total_despesas += valor
-    
+            total_despesas += valor # Movido para dentro do if Despesa para somar apenas despesas
+
     # --- Adicionar Receitas ao PDF ---
-    pdf.set_font(font_for_text, 'B', 12)  # Título da seção em negrito
+    pdf.set_font(font_for_text, 'B', 12) # Título da seção em negrito
+    pdf.set_text_color(0, 0, 255)
     pdf.cell(0, 10, "Receitas".encode('latin1', 'replace').decode('latin1'), 0, 1, 'L')
     pdf.ln(2)
 
-    pdf.set_font(font_for_text, '', 10)  # Conteúdo da seção em fonte normal
+    pdf.set_font(font_for_text, '', 10) # Conteúdo da seção em fonte normal
     # Ordenar categorias de receita alfabeticamente para consistência
     for categoria in sorted(receitas_por_categoria.keys()):
         valor = receitas_por_categoria[categoria]
@@ -774,41 +927,41 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
         pdf.cell(100, 7, f"- {categoria}".encode('latin1', 'replace').decode('latin1'), 0, 0, 'L')
         pdf.cell(0, 7, f"R$ {valor:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
 
-    pdf.set_font(font_for_text, 'B', 10)  # Total em negrito
-    pdf.set_text_color(0, 0, 255)	
+    pdf.set_font(font_for_text, 'B', 10) # Total em negrito
+    pdf.set_text_color(0, 0, 255)
     pdf.cell(100, 7, "Total Receitas".encode('latin1', 'replace').decode('latin1'), 0, 0, 'L')
     pdf.cell(0, 7, f"R$ {total_receitas:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
     pdf.ln(10)  # Espaço após a seção de Receitas
-	
+
     # --- Adicionar Despesas ao PDF ---
-    pdf.set_font(font_for_text, 'B', 12)  # Título da seção em negrito
-    pdf.set_text_color(0, 0, 0)	
+    pdf.set_font(font_for_text, 'B', 12) # Título da seção em negrito
+    pdf.set_text_color(0, 0, 0)
     pdf.cell(0, 10, "Despesas".encode('latin1', 'replace').decode('latin1'), 0, 1, 'L')
     pdf.ln(2)
 
-    pdf.set_font(font_for_text, '', 10)  # Conteúdo da seção em fonte normal
+    pdf.set_font(font_for_text, '', 10) # Conteúdo da seção em fonte normal
     # Ordenar categorias de despesa alfabeticamente
 
-    # Classificação das Despesas Administrativas
-    total_despesas = sum(despesas_por_categoria.values())	
+    # Classificação das Despesas Administrativas (Mantido conforme sua lógica original)
+    # total_despesas já calculado acima iterando sobre a lista filtrada
     pdf.cell(100, 7, "Despesas Administrativas".encode('latin1', 'replace').decode('latin1'), 0, 0, 'L')
     pdf.cell(0, 7, f"R$ {total_despesas:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
 
-    pdf.set_font(font_for_text, 'B', 10)  # Total em negrito
-    pdf.set_text_color(255, 0, 0)	
+    pdf.set_font(font_for_text, 'B', 10) # Total em negrito
+    pdf.set_text_color(255, 0, 0)
     pdf.cell(100, 7, "Total Despesas".encode('latin1', 'replace').decode('latin1'), 0, 0, 'L')
     pdf.cell(0, 7, f"R$ {total_despesas:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1, 'R')
     pdf.ln(10)  # Espaço após a seção de Despesas
 
     # --- Adicionar Resultado Líquido ---
     resultado_liquido = total_receitas - total_despesas
-    pdf.set_font(font_for_text, 'B', 12)  # Resultado em negrito
+    pdf.set_font(font_for_text, 'B', 12) # Resultado em negrito
 
     # Cor do resultado líquido: Azul para positivo, Vermelho para negativo
     if resultado_liquido >= 0:
         pdf.set_text_color(0, 0, 255)  # Azul para lucro
     else:
-        pdf.set_text_color(255, 0, 0)  # Vermelho para prejuízo
+        pdf.set_text_color(255, 0, 0) # Vermelho para prejuízo
 
     pdf.cell(100, 10, "Resultado Líquido".encode('latin1', 'replace').decode('latin1'), 0, 0, 'L')
     pdf.cell(0, 10, f"R$ {resultado_liquido:.2f}".replace('.', ',').encode('latin1', 'replace').decode('latin1'), 0, 1,
@@ -823,34 +976,34 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
 
     #Análise de Gáficos
     pdf.set_font("Arial", size=14, style='B')
-    pdf.set_text_color(0, 22, 60)	
+    pdf.set_text_color(0, 22, 60)
     pdf.cell(0, 10, "Análise de Gráficos".encode('latin1', 'replace').decode('latin1'), ln=True, align="C")
     pdf.ln(5)
-	
+
     # --- Gráfico de Donut de Receitas ---
     if receitas_por_categoria:
-    	donut_path = criar_grafico_donut(receitas_por_categoria)
-    	pdf.image(donut_path, x=55, y=pdf.get_y(), w=100)
-    	pdf.ln(110)
-	    
-    pdf.add_page()	    
+        donut_path = criar_grafico_donut(receitas_por_categoria)
+        pdf.image(donut_path, x=55, y=pdf.get_y(), w=100)
+        pdf.ln(110)
 
-    # --- Gráfico de Barras ----	
+    pdf.add_page()
+
+    # --- Gráfico de Barras ----
     plt.figure(figsize=(3, 3.2), facecolor='none') # Ajuste aqui largura x altura
-    
+
     ax = plt.gca()
     for spine in ax.spines.values():
-    	spine.set_visible(False)  # Remove borda do gráfico
+         spine.set_visible(False)  # Remove borda do gráfico
 
-    categorias = ['Receitas', 'Despesas']
-    valores = [total_receitas, total_despesas]
+    categorias_grafico_barras = ['Receitas', 'Despesas']
+    valores_grafico_barras = [total_receitas, total_despesas]
     cores_barras = ['#00163C', '#FF0000']  # Cores personalizadas
 
-    barras = plt.bar(categorias, valores, color=cores_barras)
+    barras = plt.bar(categorias_grafico_barras, valores_grafico_barras, color=cores_barras)
 
     for bar in barras:
         yval = bar.get_height()
-        plt.text(bar.get_x() + bar.get_width()/2.0, yval + max(valores)*0.02, f"R$ {yval:.2f}", ha='center', va='bottom', fontsize=10, fontweight='bold', color='black')
+        plt.text(bar.get_x() + bar.get_width()/2.0, yval + max(valores_grafico_barras)*0.02, f"R$ {yval:.2f}", ha='center', va='bottom', fontsize=10, fontweight='bold', color='black')
 
     plt.title('Comparativo de Receita x Despesa', fontsize=12, fontweight='bold', color='#003548', pad=20)
     plt.ylabel('Valores (R$)', fontsize=10, fontweight='bold')
@@ -864,17 +1017,17 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
 
     pdf.image(barras_path, x=55, y=pdf.get_y(), w=100)
     pdf.ln(80)
-	
+
     #pdf.add_page()  # <<<< QUEBRA AQUI PARA NOVA PÁGINA
     pdf.cell(0, 15, "", 0, 1)
-	
+
     y_atual = pdf.get_y()
     pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
     pdf.ln(5)
 
     pdf.set_text_color(0, 0, 0) # Resetando o texto para preto
-	
-    # --- Comentário Analítico ---
+
+    # --- Comentário Analítico (Usa os totais calculados da lista filtrada) ---
     comentario = ""
 
     if total_receitas == 0 and total_despesas == 0:
@@ -891,7 +1044,6 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
             comentario = f"Análise do Período:\n1) Suas despesas representam {proporcao_despesa:.1%} das receitas neste período, indicando que uma parte considerável das suas entradas está sendo consumida pelos custos operacionais ou pessoais.\n2) Embora haja um saldo positivo ou equilíbrio, esta proporção requer atenção constante para evitar aperto financeiro em momentos de menor receita.\n3) Recomenda-se realizar uma análise detalhada de cada item de despesa para identificar possíveis otimizações e buscar aumentar a margem de lucro ou economia."
         else:
             comentario = f"Análise do Período:\n1) Situação de prejuízo registrada, com as despesas ({total_despesas:.2f}) superando significativamente as receitas ({total_receitas:.2f}), representando {proporcao_despesa-1:.1%} a mais do que o arrecadado.\n2) Este desequilíbrio gera um fluxo de caixa negativo intenso, comprometendo a sustentabilidade financeira no longo prazo.\n3) É absolutamente crucial e urgente revisar cada gasto detalhadamente, identificar cortes necessários e implementar medidas imediatas para aumentar as receitas e reverter este cenário deficitário o mais rápido possível."
-
     # Título do comentário
     pdf.set_font(font_for_text, 'B', 11)
     pdf.cell(0, 8, "Comentários:".encode('latin1', 'replace').decode('latin1'), ln=1, align='C')
@@ -907,22 +1059,72 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
     pdf.ln(5)
 
-    signatario_nome = st.session_state.get('usuarios', [])[st.session_state.get('usuario_atual_index', 0)].get(
-        "SignatarioNome", "")
-    signatario_cargo = st.session_state.get('usuarios', [])[st.session_state.get('usuario_atual_index', 0)].get(
-        "SignatarioCargo", "")
+    # --- ADAPTAÇÃO SUPABASE: Buscar dados do signatário da lista de usuários carregada do DB ---
+    signatario_nome = ""
+    signatario_cargo = ""
+    usuario_atual_email = st.session_state.get('usuario_atual_email')
+    for u in st.session_state.get('usuarios', []):
+        if u.get('Email') == usuario_atual_email:
+            signatario_nome = u.get("SignatarioNome", "")
+            signatario_cargo = u.get("SignatarioCargo", "")
+            break # Encontrou o usuário logado
+    # --- FIM ADAPTAÇÃO SUPABASE ---
 
     if signatario_nome or signatario_cargo:
         pdf.set_font("Arial", '', 10)
         if signatario_nome:
-            pdf.cell(0, 10, f"Assinado por: {signatario_nome}", 0, 1, 'C')
+            pdf.cell(0, 10, f"Assinado por: {signatario_nome}".encode('latin1', 'replace').decode('latin1'), 0, 1, 'C')
 
         if signatario_cargo:
-            pdf.cell(0, 8, signatario_cargo, 0, 1, 'C')
+            pdf.cell(0, 8, signatario_cargo.encode('latin1', 'replace').decode('latin1'), 0, 1, 'C')
 
     # Finaliza o PDF e retorna como BytesIO
     pdf_output = pdf.output(dest='S')
     return io.BytesIO(pdf_output.encode('latin1')) # No Github adicionar: .encode('latin1'))
+
+
+# --- ADAPTAÇÃO SUPABASE: Função para carregar lançamentos com filtros (OPCIONALMENTE DO BANCO) ---
+# Decidi manter o carregamento de todos os dados no início e filtrar localmente
+# para minimizar as mudanças profundas na estrutura existente. Para grandes volumes,
+# seria mais eficiente filtrar na query do Supabase.
+def carregar_lancamentos_para_exibir(email_usuario=None, data_inicio=None, data_fim=None, todos_lancamentos=None):
+    """Carrega lançamentos do Supabase e aplica filtros opcionais."""
+    # Aqui vamos usar a lista completa já carregada em st.session_state["lancamentos"]
+    # Se você tiver muitos lançamentos, considere mover a lógica de filtro para a query do Supabase
+    # usando a função carregar_lancamentos_filtrados que mostrei no exemplo anterior.
+
+    lancamentos = todos_lancamentos if todos_lancamentos is not None else st.session_state.get("lancamentos", [])
+    lancamentos_filtrados = lancamentos # Começa com a lista base
+
+    if email_usuario:
+        lancamentos_filtrados = [
+            l for l in lancamentos_filtrados
+            if l.get('user_email') == email_usuario
+        ]
+
+    if data_inicio and data_fim:
+        data_inicio_str = data_inicio.strftime("%Y-%m-%d")
+        data_fim_str = data_fim.strftime("%Y-%m-%d")
+        lancamentos_filtrados = [
+            l for l in lancamentos_filtrados
+            if l.get('Data') and data_inicio_str <= l.get('Data') <= data_fim_str
+        ]
+    elif data_inicio:
+        data_inicio_str = data_inicio.strftime("%Y-%m-%d")
+        lancamentos_filtrados = [
+            l for l in lancamentos_filtrados
+            if l.get('Data') and l.get('Data') >= data_inicio_str
+        ]
+    elif data_fim:
+        data_fim_str = data_fim_fim.strftime("%Y-%m-%d")
+        lancamentos_filtrados = [
+            l for l in lancamentos_filtrados
+            if l.get('Data') and l.get('Data') <= data_fim_str
+        ]
+
+    return lancamentos_filtrados
+
+# --- FIM ADAPTAÇÃO SUPABASE: Função de carregar lançamentos com filtros ---
 
 
 def exibir_lancamentos():
@@ -931,12 +1133,16 @@ def exibir_lancamentos():
     # Define a variável antes dos blocos if/else e inicializa como lista vazia
     lancamentos_para_exibir = []
     usuario_email = st.session_state.get('usuario_atual_email')
+    filename_suffix = st.session_state.get('usuario_atual_nome', 'usuario').replace(" ", "_").lower()
+    usuario_para_pdf_title = st.session_state.get('usuario_atual_nome', 'Usuário')
+
 
     if st.session_state.get('tipo_usuario_atual') == 'Administrador':
         st.info("Visão do Administrador.")
 
         # --- ADICIONAR SELECTBOX PARA ESCOLHER O USUÁRIO ---
         # Crie uma lista de opções para o selectbox, incluindo a opção "Todos os Usuários"
+        # Use a lista de usuários carregada do Supabase
         opcoes_usuarios = ["Todos os Usuários"] + [u.get('Nome', 'Usuário Sem Nome') for u in
                                                    st.session_state.get('usuarios', [])]
 
@@ -949,7 +1155,9 @@ def exibir_lancamentos():
         # --- FIM DO SELECTBOX ---
 
         if usuario_selecionado_nome == "Todos os Usuários":
-            lancamentos_para_exibir = st.session_state.get("lancamentos", [])
+            # Carrega todos os lançamentos do Supabase (já feito na inicialização)
+            # A filtragem por data será aplicada abaixo
+            lancamentos_base = st.session_state.get("lancamentos", [])
             st.info("Exibindo todos os lançamentos.")
             filename_suffix = "admin_todos"
             usuario_para_pdf_title = "Todos os Lançamentos"
@@ -962,8 +1170,8 @@ def exibir_lancamentos():
                     break
 
             if usuario_selecionado_email:
-                # Filtra lançamentos pelo e-mail do usuário selecionado
-                lancamentos_para_exibir = [
+                # Filtra lançamentos localmente pelo e-mail do usuário selecionado
+                lancamentos_base = [
                     l for l in st.session_state.get("lancamentos", [])
                     if l.get('user_email') == usuario_selecionado_email
                 ]
@@ -972,12 +1180,13 @@ def exibir_lancamentos():
                 usuario_para_pdf_title = usuario_selecionado_nome
             else:
                 st.warning(f"Usuário {usuario_selecionado_nome} não encontrado.")
-                lancamentos_para_exibir = []  # Lista vazia se o usuário não for encontrado
+                lancamentos_base = []  # Lista vazia se o usuário não for encontrado
 
 
     else:  # Código existente para usuários não administradores
         # Atribui diretamente à variável lancamentos_para_exibir no bloco else
-        lancamentos_para_exibir = [
+        # Filtra lançamentos localmente pelo e-mail do usuário logado
+        lancamentos_base = [
             l for l in st.session_state.get("lancamentos", [])
             if l.get('user_email') == usuario_email
         ]
@@ -985,52 +1194,56 @@ def exibir_lancamentos():
         filename_suffix = st.session_state.get('usuario_atual_nome', 'usuario').replace(" ", "_").lower()
         usuario_para_pdf_title = st.session_state.get('usuario_atual_nome', 'Usuário')
 
-# --- Adicionar Filtro por Data ---
-    st.subheader("Selecione o Período dos Lançamentos")
+    # --- Adicionar Filtro por Data ---
+    st.subheader("Filtrar Lançamentos por Data")
     col_data_inicio, col_data_fim = st.columns(2)
 
     with col_data_inicio:
-        data_inicio_filtro = st.date_input("Data de Início", value=None, key="data_inicio_filtro")
+        # Mantém as keys para que o estado seja preservado
+        data_inicio_filtro = st.date_input("Data de Início", value=st.session_state.get("data_inicio_filtro", None), key="data_inicio_filtro")
 
     with col_data_fim:
-        data_fim_filtro = st.date_input("Data de Fim", value=None, key="data_fim_filtro")
+        # Mantém as keys para que o estado seja preservado
+        data_fim_filtro = st.date_input("Data de Fim", value=st.session_state.get("data_fim_filtro", None), key="data_fim_filtro")
 
-    lancamentos_filtrados_por_data = lancamentos_para_exibir # Inicializa com a lista completa ou filtrada por usuário
+    # --- Aplica a filtragem por data sobre a lista base (já filtrada por usuário) ---
+    lancamentos_para_exibir = lancamentos_base # Começa com a lista base
 
     if data_inicio_filtro and data_fim_filtro:
-        # Converte as datas de filtro para o formato 'YYYY-MM-DD' para comparação
+        # Converte as datas de filtro para o formato 'YYYY-MM-DD' para comparação com os dados do DB
         data_inicio_str = data_inicio_filtro.strftime("%Y-%m-%d")
         data_fim_str = data_fim_filtro.strftime("%Y-%m-%d")
 
-        lancamentos_filtrados_por_data = [
-            lancamento for lancamento in lancamentos_para_exibir
+        lancamentos_para_exibir = [
+            lancamento for lancamento in lancamentos_base
             if lancamento.get('Data') and data_inicio_str <= lancamento.get('Data') <= data_fim_str
         ]
         # Altera o formato de exibição na mensagem para DD/MM/YYYY
         st.info(f"Exibindo lançamentos de {data_inicio_filtro.strftime('%d/%m/%Y')} a {data_fim_filtro.strftime('%d/%m/%Y')}.")
     elif data_inicio_filtro:
         data_inicio_str = data_inicio_filtro.strftime("%Y-%m-%d")
-        lancamentos_filtrados_por_data = [
-            lancamento for lancamento in lancamentos_para_exibir
+        lancamentos_para_exibir = [
+            lancamento for lancamento in lancamentos_base
             if lancamento.get('Data') and lancamento.get('Data') >= data_inicio_str
         ]
         # Altera o formato de exibição na mensagem para DD/MM/YYYY
         st.info(f"Exibindo lançamentos a partir de {data_inicio_filtro.strftime('%d/%m/%Y')}.")
     elif data_fim_filtro:
         data_fim_str = data_fim_filtro.strftime("%Y-%m-%d")
-        lancamentos_filtrados_por_data = [
-            lancamento for lancamento in lancamentos_para_exibir
+        lancamentos_para_exibir = [
+            lancamento for lancamento in lancamentos_base
             if lancamento.get('Data') and lancamento.get('Data') <= data_fim_str
         ]
         # Altera o formato de exibição na mensagem para DD/MM/YYYY
         st.info(f"Exibindo lançamentos até {data_fim_filtro.strftime('%d/%m/%Y')}.")
 
-    # Agora, a lista a ser exibida e exportada é 'lancamentos_filtrados_por_data'
-    lancamentos_para_exibir = lancamentos_filtrados_por_data # Sobrescreve a lista original para usar a filtrada
+    # Agora, a lista a ser exibida e exportada é 'lancamentos_para_exibir'
+    # st.session_state["lancamentos"] já contém todos os lançamentos do DB,
+    # a lista lancamentos_para_exibir é uma sub-lista filtrada para exibição e exportação.
     # --- Fim do Filtro por Data ---
 
     if not lancamentos_para_exibir:
-        st.info("Nenhum lançamento encontrado para este usuário.")
+        st.info("Nenhum lançamento encontrado para este usuário e/ou período.")
         # Exibe os botões de exportação mesmo com lista vazia (arquivos estarão vazios ou com cabeçalho)
         col_excel, col_pdf_lista, col_pdf_dr = st.columns([1, 1, 1])
         with col_excel:
@@ -1063,18 +1276,18 @@ def exibir_lancamentos():
         st.markdown("---")
         return  # Sai da função para não exibir a tabela vazia
 
-    # Ordenar lançamentos por data (do mais recente para o mais antigo)
+    # Ordenar lançamentos por data (do mais recente para o mais antigo) - Ordena a lista filtrada
     try:
         # Usamos a lista que já foi filtrada/selecionada corretamente
         lancamentos_para_exibir.sort(key=lambda x: datetime.strptime(x.get('Data', '1900-01-01'), '%Y-%m-%d'),
-                                     reverse=True)
+                                      reverse=True)
     except ValueError:
         st.warning("Não foi possível ordenar os lançamentos por data devido a formato inválido.")
 
     # --- Botões de Exportação ---
     # Adicionamos uma terceira coluna para o novo botão da Demonstração de Resultados
     # AUMENTANDO A LARGURA DA COLUNA DE AÇÕES (último valor na lista)
-    col_excel, col_pdf_lista, col_pdf_dr = st.columns([1, 1, 1])  # Mantendo 3 colunas para os botões de exportação
+    col_excel, col_pdf_lista, col_pdf_dr = st.columns([1, 1, 1]) # Mantendo 3 colunas para os botões de exportação
 
     with col_excel:
         excel_buffer = exportar_lancamentos_para_excel(lancamentos_para_exibir)
@@ -1120,25 +1333,22 @@ def exibir_lancamentos():
     col_header_valor.markdown("**Valor**")
     col_header_acoes.markdown("**Ações: Editar/Excluir**")
 
-    # Iteramos diretamente sobre a lista de lançamentos para exibir (que já está filtrada)
+    # Iteramos diretamente sobre a lista de lançamentos para exibir (que já está filtrada e ordenada)
     for i, lancamento in enumerate(lancamentos_para_exibir):
-        # Precisamos encontrar o índice original na lista completa para exclusão/edição
-        # Isso é necessário porque removemos do índice na lista completa.
-        # Se a lista de lançamentos for muito grande, isso pode ser ineficiente.
-        # Uma alternativa seria armazenar o índice original no dicionário do lançamento.
-        try:
-            original_index = st.session_state.get("lancamentos", []).index(lancamento)
-        except ValueError:
-            # Se por algum motivo o lançamento não for encontrado na lista completa, pule
-            continue
+        # --- ADAPTAÇÃO SUPABASE: Usar o 'id' do Supabase para identificar o lançamento ---
+        lancamento_id = lancamento.get('id')
+        if lancamento_id is None:
+             st.warning(f"Lançamento sem ID encontrado: {lancamento}. Pulando.")
+             continue # Pula lançamentos sem ID (não deveria acontecer com o Supabase configurado)
 
         # AQUI ESTÁ A MODIFICAÇÃO: Usando a mesma nova proporção para as colunas de dados
         col1, col2, col3, col4, col5, col6 = st.columns(
             [2, 3, 2, 2, 2, 4])  # Proporção da última coluna aumentada para 4
         try:
+            # Datas vêm do Supabase como 'YYYY-MM-DD', formatar para DD/MM/YYYY para exibição
             data_formatada = datetime.strptime(lancamento.get("Data", '1900-01-01'), "%Y-%m-%d").strftime("%d/%m/%Y")
         except ValueError:
-            data_formatada = lancamento.get("Data", "Data Inválida")
+            data_formatada = lancamento.get("Data", "Data Inválida") # Mantém o valor original se a conversão falhar
 
         col1.write(data_formatada)
         col2.write(lancamento.get("Descrição", ""))
@@ -1150,28 +1360,30 @@ def exibir_lancamentos():
             is_owner = lancamento.get('user_email') == st.session_state.get('usuario_atual_email')
             is_admin = st.session_state.get('tipo_usuario_atual') == 'Administrador'
 
-            # Usamos o original_index para as chaves dos botões
+            # Usamos o ID do Supabase para as chaves dos botões
             if (is_owner or is_admin) and not st.session_state.get('show_add_modal') and not st.session_state.get(
                     'show_edit_modal'):
                 # Ajusta as colunas para os botões de ação - MANTENDO O DEFAULT DE [1, 1]
                 # Como a coluna 6 principal ficou mais larga, as sub-colunas dentro dela
                 # também ficarão mais largas automaticamente.
-                col_editar, col_excluir = st.columns(2)  # Mantendo o default [1, 1]
+                col_editar, col_excluir = st.columns(2) # Mantendo o default [1, 1]
                 with col_editar:
-                    if st.button("Editar", key=f"editar_{original_index}"):
-                        st.session_state["editar_indice"] = original_index
-                        st.session_state["editar_lancamento"] = st.session_state["lancamentos"][original_index].copy()
+                    # Ao clicar em editar, armazena o dicionário COMPLETO do lançamento, incluindo o 'id'
+                    if st.button("Editar", key=f"editar_{lancamento_id}"):
+                        st.session_state["editar_lancamento"] = lancamento # Armazena o dicionário completo
                         st.session_state['show_edit_modal'] = True
                         st.rerun()
                 with col_excluir:
-                    # Para excluir, removemos pelo original_index na lista completa
-                    if st.button("Excluir", key=f"excluir_{original_index}"):
-                        del st.session_state["lancamentos"][original_index]
-                        salvar_lancamentos()
-                        st.success("Lançamento excluído com sucesso!")
-                        st.rerun()
+                    # Para excluir, usamos o ID do Supabase
+                    # --- ADAPTAÇÃO SUPABASE: Chamar a função de exclusão do DB ---
+                    if st.button("Excluir", key=f"excluir_{lancamento_id}"):
+                         if excluir_lancamento_db(lancamento_id): # Chama a função que exclui no Supabase
+                             st.rerun() # Rerun após exclusão bem-sucedida
+                    # --- FIM ADAPTAÇÃO SUPABASE ---
             elif not (is_owner or is_admin):
                 st.write("Sem permissão")
+
+        # --- FIM ADAPTAÇÃO SUPABASE: Usar o 'id' do Supabase ---
 
 
 def pagina_dashboard():
@@ -1185,7 +1397,8 @@ def pagina_dashboard():
         st.rerun()
 
     st.title(f"Controle Financeiro - {st.session_state.get('usuario_atual_nome', 'Usuário')}")
-    exibir_resumo_central()
+    # exibir_resumo_central() # Chamado dentro de exibir_lancamentos agora ou precisa adaptar para usar a lista filtrada?
+                             # Deixei chamado separadamente, ele refiltra a lista completa.
 
     modal_ativo = st.session_state.get('show_add_modal') or st.session_state.get('show_edit_modal')
 
@@ -1193,10 +1406,12 @@ def pagina_dashboard():
         if st.button("➕ Adicionar Novo Lançamento"):
             st.session_state['show_add_modal'] = True
             st.rerun()
+        # Exibe o resumo e os lançamentos filtrados
+        exibir_resumo_central() # Chame o resumo antes dos lançamentos se quiser o layout original
         exibir_lancamentos()  # Chama a função exibir_lancamentos corrigida
 
     elif st.session_state.get('show_add_modal'):
-        render_add_lancamento_form()
+         render_add_lancamento_form()
 
     elif st.session_state.get('show_edit_modal'):
         render_edit_lancamento_form()
@@ -1215,40 +1430,49 @@ def pagina_configuracoes():
     st.title("Configurações")
 
     usuario_logado_email = st.session_state.get('usuario_atual_email')
-    usuario_logado_index = st.session_state.get('usuario_atual_index')
+    # --- ADAPTAÇÃO SUPABASE: Encontre o usuário logado pela lista do session_state (carregada do DB) ---
+    usuario_logado = None
+    usuario_logado_id = None
+    for u in st.session_state.get('usuarios', []):
+        if u.get('Email') == usuario_logado_email:
+            usuario_logado = u
+            usuario_logado_id = u.get('id') # Pega o ID do Supabase
+            break
+    # --- FIM ADAPTAÇÃO SUPABASE ---
 
-    # Verificação adicional para garantir que o índice do usuário logado é válido
-    if usuario_logado_index is not None and 0 <= usuario_logado_index < len(st.session_state.get('usuarios', [])):
-        usuario_logado = st.session_state['usuarios'][usuario_logado_index]
 
+    # Verificação adicional para garantir que o usuário logado foi encontrado
+    if usuario_logado:
         st.subheader(f"Editar Meu Perfil ({usuario_logado.get('Tipo', 'Tipo Desconhecido')})")
         edit_nome_proprio = st.text_input("Nome", usuario_logado.get('Nome', ''), key="edit_meu_nome")
         st.text_input("E-mail", usuario_logado.get('Email', ''), disabled=True)
         nova_senha_propria = st.text_input("Nova Senha (deixe em branco para manter)", type="password", value="",
-                                           key="edit_minha_nova_senha")
+                                            key="edit_minha_nova_senha")
         confirmar_nova_senha_propria = st.text_input("Confirmar Nova Senha", type="password", value="",
-                                                     key="edit_confirmar_minha_nova_senha")
+                                               key="edit_confirmar_minha_nova_senha")
 
         # CAMPOS DE ASSINATURA
         signatario_nome = st.text_input("Nome de quem assina os relatórios", usuario_logado.get('SignatarioNome', ''),
                                         key="signatario_nome")
         signatario_cargo = st.text_input("Cargo de quem assina os relatórios", usuario_logado.get('SignatarioCargo', ''),
-                                         key="signatario_cargo")
+                                          key="signatario_cargo")
 
         if st.button("Salvar Alterações no Perfil"):
             if nova_senha_propria == confirmar_nova_senha_propria:
-                st.session_state['usuarios'][usuario_logado_index]['Nome'] = edit_nome_proprio
+                # --- ADAPTAÇÃO SUPABASE: Atualizar usuário logado no DB ---
+                dados_para_atualizar = {
+                    "Nome": edit_nome_proprio,
+                    "SignatarioNome": signatario_nome,
+                    "SignatarioCargo": signatario_cargo,
+                }
                 if nova_senha_propria:
-                    st.session_state['usuarios'][usuario_logado_index]['Senha'] = nova_senha_propria
+                     dados_para_atualizar["Senha"] = nova_senha_propria # Repito: use hashing em produção!
 
-                    # SALVA SIGNATÁRIO
-                st.session_state['usuarios'][usuario_logado_index]['SignatarioNome'] = signatario_nome
-                st.session_state['usuarios'][usuario_logado_index]['SignatarioCargo'] = signatario_cargo
-
-                salvar_usuarios()
-                st.success("Perfil atualizado com sucesso!")
-                st.session_state['usuario_atual_nome'] = edit_nome_proprio
-                st.rerun()
+                # Chame a função de salvar/atualizar, passando o ID do usuário logado
+                if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Inclui o ID e os dados
+                     st.session_state['usuario_atual_nome'] = edit_nome_proprio # Atualiza o nome na sessão
+                     st.rerun() # Rerun após salvar no Supabase
+                # --- FIM ADAPTAÇÃO SUPABASE ---
             else:
                 st.error("As novas senhas não coincidem.")
     else:
@@ -1258,13 +1482,13 @@ def pagina_configuracoes():
     st.subheader("Gerenciar Categorias de Receitas")
     st.markdown("---")
 
-    # Verificação adicional antes de tentar gerenciar categorias
-    if usuario_logado_index is not None and 0 <= usuario_logado_index < len(st.session_state.get('usuarios', [])):
-        # Garante que a chave 'categorias_receita' existe para o usuário logado (conforme original)
-        if 'categorias_receita' not in st.session_state['usuarios'][usuario_logado_index]:
-            st.session_state['usuarios'][usuario_logado_index]['categorias_receita'] = []
+    # Verificação adicional antes de tentar gerenciar categorias (usa a variável usuario_logado já encontrada)
+    if usuario_logado:
+        # Garante que a chave 'categorias_receita' existe para o usuário logado
+        if 'categorias_receita' not in usuario_logado or usuario_logado['categorias_receita'] is None:
+             usuario_logado['categorias_receita'] = [] # Inicializa se for None
 
-        usuario_categorias_atuais = st.session_state['usuarios'][usuario_logado_index]['categorias_receita']
+        usuario_categorias_atuais = usuario_logado['categorias_receita']
         # Inclui as categorias padrão apenas para exibição e verificação de duplicidade
         todas_categorias_receita_disponiveis = CATEGORIAS_PADRAO_RECEITA + usuario_categorias_atuais
 
@@ -1273,18 +1497,17 @@ def pagina_configuracoes():
             if nova_categoria_receita:
                 # Verifica se a categoria já existe (case-insensitive check) na lista combinada do usuário
                 if nova_categoria_receita.lower() not in [c.lower() for c in todas_categorias_receita_disponiveis]:
-                    # Adiciona a nova categoria à lista personalizada do usuário logado
-                    st.session_state['usuarios'][usuario_logado_index]['categorias_receita'].append(
-                        nova_categoria_receita)
-                    salvar_usuarios()
-                    # Atualiza a lista combinada de categorias na sessão para o usuário logado
-                    st.session_state['todas_categorias_receita'] = list(dict.fromkeys(
-                        CATEGORIAS_PADRAO_RECEITA + st.session_state['usuarios'][usuario_logado_index][
-                            'categorias_receita']))
+                    # --- ADAPTAÇÃO SUPABASE: Adicionar categoria na lista do usuário no DB ---
+                    novas_categorias_receita_usuario = usuario_categorias_atuais + [nova_categoria_receita]
+                    dados_para_atualizar = {"categorias_receita": novas_categorias_receita_usuario}
 
-                    st.success(
-                        f"Categoria '{nova_categoria_receita}' adicionada com sucesso às suas categorias de receita!")
-                    st.rerun()  # Rerun para atualizar o selectbox imediatamente
+                    if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Atualiza no Supabase
+                        # A função salvar_usuario_supabase já recarrega a lista de usuários no session_state
+                        # e a lógica de login/inicialização já atualiza st.session_state['todas_categorias_receita']
+                        st.success(
+                            f"Categoria '{nova_categoria_receita}' adicionada com sucesso às suas categorias de receita!")
+                        st.rerun() # Rerun após salvar no Supabase
+                    # --- FIM ADAPTAÇÃO SUPABASE ---
                 else:
                     st.warning(
                         f"A categoria '{nova_categoria_receita}' já existe nas suas categorias de receita ou nas padrão.")
@@ -1296,7 +1519,7 @@ def pagina_configuracoes():
         if usuario_categorias_atuais:
             st.write("Clique no botão 'Excluir' ao lado de uma categoria personalizada para removê-la.")
 
-            # Filtra lançamentos do usuário logado para verificar uso da categoria
+            # Filtra lançamentos do usuário logado para verificar uso da categoria (usa a lista carregada do DB)
             lancamentos_do_usuario = [
                 l for l in st.session_state.get("lancamentos", [])
                 if l.get('user_email') == usuario_logado_email and l.get('Tipo de Lançamento') == 'Receita'
@@ -1304,23 +1527,25 @@ def pagina_configuracoes():
             categorias_receita_em_uso = {l.get('Categorias') for l in lancamentos_do_usuario if l.get('Categorias')}
 
             # Itera sobre categorias personalizadas para exibir e permitir exclusão
-            for i, categoria in enumerate(usuario_categorias_atuais):
+            # Percorra uma CÓPIA da lista se for modificar durante a iteração
+            for i, categoria in enumerate(list(usuario_categorias_atuais)): # Itera sobre uma cópia
                 col_cat, col_del = st.columns([3, 1])
                 col_cat.write(categoria)
                 # Verifica se a categoria está em uso em algum lançamento de receita do usuário
                 if categoria in categorias_receita_em_uso:
                     col_del.write("Em uso")
                 else:
-                    if col_del.button("Excluir", key=f"del_cat_receita_{i}"):
-                        # Remove a categoria da lista personalizada do usuário
-                        del st.session_state['usuarios'][usuario_logado_index]['categorias_receita'][i]
-                        salvar_usuarios()
-                        # Atualiza a lista combinada na sessão
-                        st.session_state['todas_categorias_receita'] = list(dict.fromkeys(
-                            CATEGORIAS_PADRAO_RECEITA + st.session_state['usuarios'][usuario_logado_index][
-                                'categorias_receita']))
-                        st.success(f"Categoria '{categoria}' excluída com sucesso!")
-                        st.rerun()
+                    # --- ADAPTAÇÃO SUPABASE: Excluir categoria da lista do usuário no DB ---
+                    if col_del.button("Excluir", key=f"del_cat_receita_{categoria}_{i}"): # Use categoria no key para unicidade
+                        novas_categorias_receita_usuario = [c for c in usuario_categorias_atuais if c != categoria]
+                        dados_para_atualizar = {"categorias_receita": novas_categorias_receita_usuario}
+
+                        if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Atualiza no Supabase
+                            # A função salvar_usuario_supabase já recarrega a lista de usuários no session_state
+                            # e a lógica de login/inicialização já atualiza st.session_state['todas_categorias_receita']
+                            st.success(f"Categoria '{categoria}' excluída com sucesso!")
+                            st.rerun() # Rerun após salvar no Supabase
+                    # --- FIM ADAPTAÇÃO SUPABASE ---
         else:
             st.info("Você ainda não adicionou nenhuma categoria de receita personalizada.")
 
@@ -1333,7 +1558,8 @@ def pagina_configuracoes():
         st.markdown("---")
         st.subheader("Gerenciar Usuários (Apenas Admin)")
 
-        if st.session_state.get('editar_usuario_index') is not None:
+        # --- ADAPTAÇÃO SUPABASE: Controle de edição de usuário por ID do DB ---
+        if st.session_state.get('editar_usuario_data') is not None: # Verifica se há dados de usuário para editar
             render_edit_usuario_form()
         else:
             with st.expander("Adicionar Novo Usuário", expanded=False):
@@ -1348,22 +1574,23 @@ def pagina_configuracoes():
                     if submit_user_button:
                         if not novo_nome or not novo_email or not nova_senha or not novo_tipo:
                             st.warning("Por favor, preencha todos os campos para o novo usuário.")
+                        # Verifica se o email já existe na lista carregada do Supabase
                         elif any(u.get('Email') == novo_email for u in st.session_state.get('usuarios', [])):
                             st.warning(f"E-mail '{novo_email}' já cadastrado.")
                         else:
-                            novo_usuario = {
+                            # --- ADAPTAÇÃO SUPABASE: Salvar novo usuário no DB ---
+                            novo_usuario_data = {
                                 "Nome": novo_nome,
                                 "Email": novo_email,
-                                "Senha": nova_senha,  # Em um app real, use hashing de senha!
+                                "Senha": nova_senha, # Em um app real, use hashing de senha!
                                 "Tipo": novo_tipo,
-                                "categorias_receita": [],
-                                # Inicializa categorias personalizadas (mantido conforme original)
+                                "categorias_receita": [], # Inicializa categorias personalizadas
                                 # Não adiciona categorias_despesa aqui, mantendo o original
                             }
-                            st.session_state['usuarios'].append(novo_usuario)
-                            salvar_usuarios()
-                            st.success(f"Usuário '{novo_nome}' adicionado com sucesso!")
-                            st.rerun()
+                            if salvar_usuario_supabase(novo_usuario_data): # Chama a função que salva no Supabase
+                                st.success(f"Usuário '{novo_nome}' adicionado com sucesso!")
+                                st.rerun() # Rerun após salvar no Supabase
+                            # --- FIM ADAPTAÇÃO SUPABASE ---
 
             st.subheader("Lista de Usuários")
             if st.session_state.get('usuarios'):
@@ -1373,16 +1600,16 @@ def pagina_configuracoes():
                 col_user_tipo.markdown("**Tipo**")
                 col_user_acoes.markdown("**Ações**")
 
-                # Não liste o próprio usuário Admin para evitar que ele se exclua acidentalmente
-                usuarios_para_listar = [u for u in st.session_state['usuarios'] if
+                # Não liste o próprio usuário Admin logado para evitar que ele se exclua acidentalmente
+                usuarios_para_listar = [u for u in st.session_state.get('usuarios', []) if
                                         u.get('Email') != usuario_logado_email]
 
+                # --- ADAPTAÇÃO SUPABASE: Iterar sobre a lista carregada do DB e usar IDs ---
                 for i, usuario in enumerate(usuarios_para_listar):
-                    # Precisamos encontrar o índice ORIGINAL na lista completa para exclusão/edição
-                    try:
-                        original_user_index = st.session_state['usuarios'].index(usuario)
-                    except ValueError:
-                        continue  # Pula se não encontrar (não deveria acontecer)
+                    user_id = usuario.get('id') # Pega o ID do Supabase
+                    if user_id is None:
+                        st.warning(f"Usuário sem ID encontrado na lista: {usuario}. Pulando.")
+                        continue # Pula usuários sem ID
 
                     col1, col2, col3, col4 = st.columns([3, 4, 2, 3])
                     col1.write(usuario.get('Nome', ''))
@@ -1392,21 +1619,22 @@ def pagina_configuracoes():
                     with col4:
                         col_edit_user, col_del_user = st.columns(2)
                         with col_edit_user:
-                            if st.button("Editar", key=f"edit_user_{original_user_index}"):
-                                st.session_state['editar_usuario_index'] = original_user_index
-                                st.session_state['editar_usuario_data'] = st.session_state['usuarios'][
-                                    original_user_index].copy()
+                            # Ao clicar em editar, armazena o dicionário COMPLETO do usuário, incluindo o 'id'
+                            if st.button("Editar", key=f"edit_user_{user_id}"): # Usa o ID do Supabase para o key
+                                st.session_state['editar_usuario_data'] = usuario # Armazena o dicionário completo
+                                st.session_state['editar_usuario_index'] = i # Mantém o índice local para render_edit_usuario_form (pode ser adaptado para usar só o ID)
                                 st.rerun()
                         with col_del_user:
                             # Só permite excluir se não for o usuário logado
                             if usuario.get('Email') != usuario_logado_email:
-                                if st.button("Excluir", key=f"del_user_{original_user_index}",
-                                             help="Excluir este usuário"):
-                                    # Confirmação simples (opcional)
-                                    # if st.checkbox(f"Confirmar exclusão de {usuario.get('Nome', '')}", key=f"confirm_del_user_{original_user_index}"):
-                                    excluir_usuario(original_user_index)
+                                # --- ADAPTAÇÃO SUPABASE: Chamar a função de exclusão do DB ---
+                                if st.button("Excluir", key=f"del_user_{user_id}", help="Excluir este usuário"): # Usa o ID do Supabase para o key
+                                    if excluir_usuario_db(user_id): # Chama a função que exclui no Supabase
+                                         st.rerun() # Rerun após exclusão bem-sucedida
+                                # --- FIM ADAPTAÇÃO SUPABASE ---
                             else:
                                 st.write("Não pode excluir a si mesmo")
+                # --- FIM ADAPTAÇÃO SUPABASE: Iterar sobre a lista carregada do DB ---
 
             else:
                 st.info("Nenhum outro usuário cadastrado.")
@@ -1417,54 +1645,71 @@ def pagina_configuracoes():
         st.info("Esta seção está disponível apenas para administradores.")
 
 
+# --- ADAPTAÇÃO SUPABASE: Função para renderizar formulário de edição de usuário (USA DADOS DO DB) ---
 def render_edit_usuario_form():
-    if st.session_state.get('editar_usuario_index') is None:
+    # Verifica se há dados de usuário para editar armazenados na sessão
+    if st.session_state.get('editar_usuario_data') is None:
         return
 
-    index = st.session_state['editar_usuario_index']
-    usuario_a_editar = st.session_state.get('usuarios', [])[index]
+    # Pega os dados do usuário a ser editado diretamente do session_state (carregado do DB)
+    usuario_a_editar = st.session_state['editar_usuario_data']
+    user_id = usuario_a_editar.get('id') # Pega o ID do Supabase
 
-    # Verifica se o usuário logado é administrador e não está tentando editar a si mesmo através deste modal
-    if st.session_state.get('tipo_usuario_atual') != 'Administrador' or usuario_a_editar.get(
-            'Email') == st.session_state.get('usuario_atual_email'):
-        st.error("Você não tem permissão para editar este usuário desta forma.")
-        st.session_state['editar_usuario_index'] = None
+    if user_id is None:
+        st.error("ID do usuário a ser editado não encontrado.")
         st.session_state['editar_usuario_data'] = None
+        st.session_state['editar_usuario_index'] = None
         st.rerun()
         return
 
-    with st.expander(f"Editar Usuário: {usuario_a_editar.get('Nome', '')}", expanded=True):
+    # Verifica se o usuário logado é administrador e não está tentando editar a si mesmo através deste modal
+    usuario_logado_email = st.session_state.get('usuario_atual_email')
+    if st.session_state.get('tipo_usuario_atual') != 'Administrador' or usuario_a_editar.get('Email') == usuario_logado_email:
+        st.error("Você não tem permissão para editar este usuário desta forma.")
+        st.session_state['editar_usuario_data'] = None
+        st.session_state['editar_usuario_index'] = None
+        st.rerun()
+        return
+
+    # Use o ID do Supabase no key do expander e do formulário
+    with st.expander(f"Editar Usuário: {usuario_a_editar.get('Nome', '')} (ID: {user_id})", expanded=True):
         st.subheader(f"Editar Usuário: {usuario_a_editar.get('Nome', '')}")
-        with st.form(key=f"edit_usuario_form_{index}"):
-            # Usamos a cópia em st.session_state['editar_usuario_data'] para preencher o formulário
-            edit_nome = st.text_input("Nome", st.session_state['editar_usuario_data'].get('Nome', ''),
-                                      key=f"edit_user_nome_{index}")
-            st.text_input("E-mail", st.session_state['editar_usuario_data'].get('Email', ''), disabled=True,
-                          key=f"edit_user_email_{index}")
+        with st.form(key=f"edit_usuario_form_{user_id}"): # Usa o ID do Supabase para o key do formulário
+            # Usa os dados do usuario_a_editar (carregados do DB) para preencher o formulário
+            edit_nome = st.text_input("Nome", usuario_a_editar.get('Nome', ''),
+                                      key=f"edit_user_nome_{user_id}") # Usa o ID no key
+            st.text_input("E-mail", usuario_a_editar.get('Email', ''), disabled=True,
+                          key=f"edit_user_email_{user_id}") # Usa o ID no key
             edit_senha = st.text_input("Nova Senha (deixe em branco para manter)", type="password", value="",
-                                       key=f"edit_user_senha_{index}")
+                                     key=f"edit_user_senha_{user_id}") # Usa o ID no key
             edit_tipo = st.selectbox("Tipo", ["Cliente", "Administrador"], index=["Cliente", "Administrador"].index(
-                st.session_state['editar_usuario_data'].get('Tipo', 'Cliente')), key=f"edit_user_tipo_{index}")
+                usuario_a_editar.get('Tipo', 'Cliente')), key=f"edit_user_tipo_{user_id}") # Usa o ID no key
 
             submit_edit_user_button = st.form_submit_button("Salvar Edição do Usuário")
 
             if submit_edit_user_button:
-                # Atualiza os dados na lista original
-                st.session_state['usuarios'][index]['Nome'] = edit_nome
-                if edit_senha:  # Atualiza a senha apenas se uma nova foi digitada
-                    st.session_state['usuarios'][index]['Senha'] = edit_senha  # Lembre-se: em um app real, use hashing
-                st.session_state['usuarios'][index]['Tipo'] = edit_tipo
+                # --- ADAPTAÇÃO SUPABASE: Atualizar usuário no DB ---
+                dados_para_atualizar = {
+                    "Nome": edit_nome,
+                    "Tipo": edit_tipo,
+                }
+                if edit_senha: # Atualiza a senha apenas se uma nova foi digitada
+                    dados_para_atualizar["Senha"] = edit_senha # Lembre-se: em um app real, use hashing
 
-                salvar_usuarios()
-                st.success("Usuário atualizado com sucesso!")
-                st.session_state['editar_usuario_index'] = None
-                st.session_state['editar_usuario_data'] = None
-                st.rerun()
+                # Chame a função de salvar/atualizar, passando o ID do usuário e os dados
+                if salvar_usuario_supabase({"id": user_id, **dados_para_atualizar}): # Inclui o ID e os dados
+                    st.success("Usuário atualizado com sucesso!")
+                    st.session_state['editar_usuario_data'] = None
+                    st.session_state['editar_usuario_index'] = None # Limpa o índice local também
+                    st.rerun() # Rerun após salvar no Supabase
+                # --- FIM ADAPTAÇÃO SUPABASE ---
 
-        if st.button("Cancelar Edição", key=f"cancel_edit_user_form_{index}"):
-            st.session_state['editar_usuario_index'] = None
+        # Botão cancelar FORA do formulário (usa o ID do Supabase para o key)
+        if st.button("Cancelar Edição", key=f"cancel_edit_user_form_{user_id}"):
             st.session_state['editar_usuario_data'] = None
+            st.session_state['editar_usuario_index'] = None # Limpa o índice local também
             st.rerun()
+# --- FIM ADAPTAÇÃO SUPABASE: Função para renderizar formulário de edição de usuário ---
 
 
 # --- Navegação entre Páginas ---
@@ -1485,7 +1730,13 @@ if st.session_state.get('autenticado'):
         st.session_state['usuario_atual_nome'] = None
         st.session_state['tipo_usuario_atual'] = None
         st.session_state['usuario_atual_index'] = None
-        st.session_state['todas_categorias_receita'] = CATEGORIAS_PADRAO_RECEITA.copy()  # Reseta categorias de receita
+        st.session_state['todas_categorias_receita'] = CATEGORIAS_PADRAO_RECEITA.copy() # Reseta categorias de receita
         # Não reseta categorias de despesa, pois não eram gerenciadas por usuário no original
-        st.session_state['pagina_atual'] = 'dashboard'  # Redireciona para o login
+        st.session_state['pagina_atual'] = 'dashboard' # Redireciona para o login
+        # Limpa dados de edição em sessão ao sair
+        st.session_state['editar_lancamento'] = None
+        st.session_state['show_edit_modal'] = False
+        st.session_state['editar_usuario_data'] = None
+        st.session_state['editar_usuario_index'] = None
+        st.session_state['show_add_modal'] = False # Garante que o modal de adicionar fecha
         st.rerun()
