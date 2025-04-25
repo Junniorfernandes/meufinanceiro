@@ -1582,10 +1582,10 @@ def pagina_configuracoes():
                         else:
                             # --- ADAPTAÇÃO SUPABASE: Salvar novo usuário no DB ---
                             novo_usuario_data = {
-                                "Nome": novo_nome,
-                                "Email": novo_email,
-                                "Senha": nova_senha, # Em um app real, use hashing de senha!
-                                "Tipo": novo_tipo,
+                                "nome": novo_nome,
+                                "email": novo_email,
+                                "senha": nova_senha, # Em um app real, use hashing de senha!
+                                "tipo": novo_tipo,
                                 "categorias_receita": [], # Inicializa categorias personalizadas
                                 # Não adiciona categorias_despesa aqui, mantendo o original
                             }
