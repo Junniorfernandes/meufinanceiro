@@ -1493,13 +1493,6 @@ def pagina_configuracoes():
                 }
                 if nova_senha_propria:
                      dados_para_atualizar["senha"] = nova_senha_propria # Repito: use hashing em produção!
-                else:
-                     # --- GARANTA QUE ESTA LINHA ESTÁ PRESENTE E CORRETA ---
-                     # Inclui a senha atual se não houver nova senha (Recuperada do objeto usuario_logado)
-                     dados_para_atualizar["senha"] = usuario_logado.get('senha', '')    
-                dados_para_atualizar['nome'] = st.session_state.get('usuario_atual_nome')    
-                dados_para_atualizar['email'] = st.session_state.get('usuario_atual_email')
-                dados_para_atualizar["senha"] = usuario_logado.get('senha', '')
                 
                 # Chame a função de salvar/atualizar, passando o ID do usuário logado
                 if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Inclui o ID e os dados
@@ -1533,11 +1526,7 @@ def pagina_configuracoes():
                     # --- ADAPTAÇÃO SUPABASE: Adicionar categoria na lista do usuário no DB ---
                     novas_categorias_receita_usuario = usuario_categorias_atuais + [nova_categoria_receita]
                     dados_para_atualizar = {"categorias_receita": novas_categorias_receita_usuario}
-                    
-                    dados_para_atualizar['nome'] = st.session_state.get('usuario_atual_nome')
-                    dados_para_atualizar['email'] = st.session_state.get('usuario_atual_email')
-                    dados_para_atualizar["senha"] = usuario_logado.get('senha', '')
-                    
+
                     if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Atualiza no Supabase
                         # A função salvar_usuario_supabase já recarrega a lista de usuários no session_state
                         # e a lógica de login/inicialização já atualiza st.session_state['todas_categorias_receita']
@@ -1576,11 +1565,7 @@ def pagina_configuracoes():
                     if col_del.button("Excluir", key=f"del_cat_receita_{categoria}_{i}"): # Use categoria no key para unicidade
                         novas_categorias_receita_usuario = [c for c in usuario_categorias_atuais if c != categoria]
                         dados_para_atualizar = {"categorias_receita": novas_categorias_receita_usuario}
-                        
-                        dados_para_atualizar['nome'] = st.session_state.get('usuario_atual_nome')
-                        dados_para_atualizar['email'] = st.session_state.get('usuario_atual_email')
-                        dados_para_atualizar["senha"] = usuario_logado.get('senha', '')
-                        
+
                         if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Atualiza no Supabase
                             # A função salvar_usuario_supabase já recarrega a lista de usuários no session_state
                             # e a lógica de login/inicialização já atualiza st.session_state['todas_categorias_receita']
@@ -1612,37 +1597,25 @@ def pagina_configuracoes():
                     novo_tipo = st.selectbox("Tipo", ["Cliente", "Administrador"], key="add_user_tipo")
                     submit_user_button = st.form_submit_button("Adicionar Usuário")
 
-                   if submit_user_button:
+                    if submit_user_button:
                         if not novo_nome or not novo_email or not nova_senha or not novo_tipo:
                             st.warning("Por favor, preencha todos os campos para o novo usuário.")
+                        # Verifica se o email já existe na lista carregada do Supabase
+                        elif any(u.get('email') == novo_email for u in st.session_state.get('usuarios', [])):
+                            st.warning(f"E-mail '{novo_email}' já cadastrado.")
                         else:
-                            # --- ADAPTAÇÃO SUPABASE: Verificar duplicidade de e-mail no DB ---
-                            try:
-                                response_check = supabase.table("usuarios").select("email").eq("email", novo_email).execute()
-                                if response_check.error:
-                                    st.error(f"Erro ao verificar duplicidade de e-mail: {response_check.error.message}")
-                                    return # Para a execução em caso de erro no DB
-
-                                if response_check.data: # Se a lista de dados não estiver vazia, o e-mail já existe
-                                    st.warning(f"E-mail '{novo_email}' já cadastrado no banco de dados.")
-                                else:
-                                    # --- Prosseguir com a inserção APENAS SE O E-MAIL NÃO EXISTE ---
-                                    novo_usuario_data = {
-                                        "nome": novo_nome if novo_nome else "Novo Usuário",
-                                        "email": novo_email,
-                                        "senha": nova_senha, # Em um app real, use hashing de senha!
-                                        "tipo": novo_tipo,
-                                        "categorias_receita": [],
-                                        # Não adiciona categorias_despesa aqui, mantendo o original
-                                    }
-                                    # A função salvar_usuario_supabase fará o INSERT pois não há 'id' no dicionário
-                                    if salvar_usuario_supabase(novo_usuario_data):
-                                        st.success(f"Usuário '{novo_usuario_data['nome']}' adicionado com sucesso!")
-                                        st.rerun()
-                                    # --- FIM DA INSERÇÃO ---
-
-                            except Exception as e:
-                                st.error(f"Erro na operação de adicionar usuário: {e}")
+                            # --- ADAPTAÇÃO SUPABASE: Salvar novo usuário no DB ---
+                            novo_usuario_data = {
+                                "nome": novo_nome,
+                                "email": novo_email,
+                                "senha": nova_senha, # Em um app real, use hashing de senha!
+                                "tipo": novo_tipo,
+                                "categorias_receita": [], # Inicializa categorias personalizadas
+                                # Não adiciona categorias_despesa aqui, mantendo o original
+                            }
+                            if salvar_usuario_supabase(novo_usuario_data): # Chama a função que salva no Supabase
+                                st.success(f"Usuário '{novo_nome}' adicionado com sucesso!")
+                                st.rerun() # Rerun após salvar no Supabase
                             # --- FIM ADAPTAÇÃO SUPABASE ---
 
             st.subheader("Lista de Usuários")
@@ -1743,13 +1716,12 @@ def render_edit_usuario_form():
             if submit_edit_user_button:
                 # --- ADAPTAÇÃO SUPABASE: Atualizar usuário no DB ---
                 dados_para_atualizar = {
-                    "nome": edit_nome,
-                    "tipo": edit_tipo,
+                    "Nome": edit_nome,
+                    "Tipo": edit_tipo,
                 }
                 if edit_senha: # Atualiza a senha apenas se uma nova foi digitada
                     dados_para_atualizar["Senha"] = edit_senha # Lembre-se: em um app real, use hashing
-                    
-                dados_para_atualizar['email'] = usuario_a_editar.get('email')
+
                 # Chame a função de salvar/atualizar, passando o ID do usuário e os dados
                 if salvar_usuario_supabase({"id": user_id, **dados_para_atualizar}): # Inclui o ID e os dados
                     st.success("Usuário atualizado com sucesso!")
