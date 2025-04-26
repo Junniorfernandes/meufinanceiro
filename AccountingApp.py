@@ -1487,7 +1487,9 @@ def pagina_configuracoes():
             if nova_senha_propria == confirmar_nova_senha_propria:
                 # --- ADAPTAÇÃO SUPABASE: Atualizar usuário logado no DB ---
                 dados_para_atualizar = {
+                    "id": usuario_atual.get('id'),
                     "nome": edit_nome_proprio,
+                    "email": usuario_atual.get('email'),
                     "signatarioNome": signatario_nome,
                     "signatarioCargo": signatario_cargo,
                 }
