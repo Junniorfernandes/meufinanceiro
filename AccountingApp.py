@@ -1724,7 +1724,7 @@ def render_edit_usuario_form():
                 "nome": edit_nome,  # Changed to lowercase for consistency
                 "email": usuario_a_editar.get('email'),  # Add this line to include email
                 "tipo": edit_tipo,  # Changed to lowercase for consistency
-}
+              }
 
                 if edit_senha: # Atualiza a senha apenas se uma nova foi digitada
                     dados_para_atualizar["Senha"] = edit_senha # Lembre-se: em um app real, use hashing
