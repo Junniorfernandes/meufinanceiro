@@ -122,32 +122,28 @@ def salvar_usuario_supabase(usuario_data):
     if not usuario_data.get('email'):
         st.error("O campo de e-mail é obrigatório para salvar o usuário.")
         return False
+    # Esta função é genérica para inserir ou atualizar lançamentos.
+    # Se usuario_data tiver 'id', tenta atualizar. Caso contrário, insere.
     try:
-        user_id = usuario_data.get('id')
-        if user_id is not None: # É uma atualização
+        # Determine if it's an update or insert based on the presence AND validity of 'id'
+        user_id = usuario_data.get('id') # Tenta obter o ID, retorna None se a chave não existir
+        if user_id is not None: # Se 'id' existe E não é None, assumimos que é uma ATUALIZAÇÃO
+            # É uma atualização
+            # Cria uma cópia dos dados para remover o 'id' com segurança antes de enviar para o update
             update_data = usuario_data.copy()
-            del update_data['id']
+            del update_data['id'] # Remove a chave 'id' do payload de dados para o update
 
-            # --- MODIFICAÇÃO INÍCIO ---
-            # Explicitamente remove 'senha' de update_data se não estiver presente nos dados originais
-            # Isso garante que a senha existente no DB não seja sobrescrita com null se não for alterada no formulário.
-            if 'senha' not in usuario_data:
-                if 'senha' in update_data:
-                    del update_data['senha']
-            # --- MODIFICAÇÃO FIM ---
-
-            # --- INÍCIO PRINT DEBUG ---
-            print("DEBUG: Dados de ATUALIZAÇÃO sendo enviados para o Supabase (usuário ID:", user_id, "):", update_data)
-            # --- FIM PRINT DEBUG ---
-
+            # Executa a operação de atualização no Supabase, filtrando pelo ID
             response = supabase.table("usuarios").update(update_data).eq("id", user_id).execute()
-        else: # É uma inserção
+        else: # Se 'id' é None (chave não existe ou valor é None), assumimos que é uma INSERÇÃO
+            # É uma inserção
+            # Cria uma cópia dos dados para garantir que a chave 'id' NÃO esteja no payload de inserção
             insert_data = usuario_data.copy()
             if 'id' in insert_data:
+                 # Remove a chave 'id' se ela existir (especialmente se for {"id": None, ...})
                  del insert_data['id']
-            # --- INÍCIO PRINT DEBUG ---
-            print("DEBUG: Dados de INSERÇÃO sendo enviados para o Supabase (usuário email:", insert_data.get('email'), "):", insert_data)
-            # --- FIM PRINT DEBUG ---
+
+            # Executa a operação de inserção no Supabase
             response = supabase.table("usuarios").insert(insert_data).execute()
 
         # Verifica se a resposta possui o atributo 'error' E se há um erro reportado (mantido do fix anterior)
@@ -155,6 +151,7 @@ def salvar_usuario_supabase(usuario_data):
             st.error(f"Erro ao salvar usuário no Supabase: {response.error.message}")
             return False # Indica falha
         else:
+            # Se não há atributo 'error' ou o erro é None, considera sucesso (ou um tipo diferente de resposta)
             st.success("Usuário salvo com sucesso!")
             # Após salvar, recarregue a lista de usuários para refletir a mudança
             carregar_usuarios() # Recarrega todos os usuários
@@ -331,7 +328,7 @@ def pagina_login():
     st.title("Junior Fernandes")
     st.title("Acesse seu Financeiro")
     email = st.text_input("E-mail")
-    senha = st.text_input("senha", type="password")
+    senha = st.text_input("Senha", type="password")
 
     # Botões lado a lado com o botão de link à esquerda
     col1, col2 = st.columns([1, 1])
@@ -1730,7 +1727,7 @@ def render_edit_usuario_form():
                 }
 
                 if edit_senha: # Atualiza a senha apenas se uma nova foi digitada
-                    dados_para_atualizar["senha"] = edit_senha # Lembre-se: em um app real, use hashing
+                    dados_para_atualizar["Senha"] = edit_senha # Lembre-se: em um app real, use hashing
 
                 # Chame a função de salvar/atualizar, passando o ID do usuário e os dados
                 if salvar_usuario_supabase({"id": user_id, **dados_para_atualizar}): # Inclui o ID e os dados
