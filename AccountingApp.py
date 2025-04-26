@@ -119,9 +119,7 @@ def carregar_usuarios():
 
 
 def salvar_usuario_supabase(usuario_data):
-    if not usuario_data.get('email'):
-        st.error("O campo de e-mail é obrigatório para salvar o usuário.")
-        return False
+   
     # Esta função é genérica para inserir ou atualizar lançamentos.
     # Se usuario_data tiver 'id', tenta atualizar. Caso contrário, insere.
     try:
