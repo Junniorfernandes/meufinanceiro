@@ -1724,7 +1724,8 @@ def render_edit_usuario_form():
                 }
                 if edit_senha: # Atualiza a senha apenas se uma nova foi digitada
                     dados_para_atualizar["Senha"] = edit_senha # Lembre-se: em um app real, use hashing
-
+                    
+                dados_para_atualizar['email'] = usuario_a_editar.get('email')
                 # Chame a função de salvar/atualizar, passando o ID do usuário e os dados
                 if salvar_usuario_supabase({"id": user_id, **dados_para_atualizar}): # Inclui o ID e os dados
                     st.success("Usuário atualizado com sucesso!")
