@@ -122,42 +122,38 @@ def salvar_usuario_supabase(usuario_data):
     if not usuario_data.get('email'):
         st.error("O campo de e-mail é obrigatório para salvar o usuário.")
         return False
-    # Esta função é genérica para inserir ou atualizar lançamentos.
-    # Se usuario_data tiver 'id', tenta atualizar. Caso contrário, insere.
     try:
-        # Determine if it's an update or insert based on the presence AND validity of 'id'
-        user_id = usuario_data.get('id') # Tenta obter o ID, retorna None se a chave não existir
-        if user_id is not None: # Se 'id' existe E não é None, assumimos que é uma ATUALIZAÇÃO
-            # É uma atualização
-            # Cria uma cópia dos dados para remover o 'id' com segurança antes de enviar para o update
+        user_id = usuario_data.get('id')
+        if user_id is not None: # É uma atualização
             update_data = usuario_data.copy()
-            del update_data['id'] # Remove a chave 'id' do payload de dados para o update
+            del update_data['id']
 
-            # Executa a operação de atualização no Supabase, filtrando pelo ID
+            # --- MODIFICAÇÃO INÍCIO ---
+            # Explicitamente remove 'senha' de update_data se não estiver presente nos dados originais
+            # Isso garante que a senha existente no DB não seja sobrescrita com null se não for alterada no formulário.
+            if 'senha' not in usuario_data:
+                if 'senha' in update_data: # Verifica se a chave 'senha' chegou aqui por algum motivo e a remove
+                    del update_data['senha']
+            # --- MODIFICAÇÃO FIM ---
+
             response = supabase.table("usuarios").update(update_data).eq("id", user_id).execute()
-        else: # Se 'id' é None (chave não existe ou valor é None), assumimos que é uma INSERÇÃO
-            # É uma inserção
-            # Cria uma cópia dos dados para garantir que a chave 'id' NÃO esteja no payload de inserção
+        else: # É uma inserção
             insert_data = usuario_data.copy()
             if 'id' in insert_data:
-                 # Remove a chave 'id' se ela existir (especialmente se for {"id": None, ...})
                  del insert_data['id']
-
-            # Executa a operação de inserção no Supabase
             response = supabase.table("usuarios").insert(insert_data).execute()
 
-        # Verifica se a resposta possui o atributo 'error' E se há um erro reportado (mantido do fix anterior)
+        # Verifica se a resposta possui o atributo 'error' E se há um erro reportado
         if hasattr(response, 'error') and response.error:
-            st.error(f"Erro ao salvar usuário no Supabase: {response.error.message}")
+            st.error(f"Erro ao salvar usuário no Supabase: {response.error.message}") [cite: 32]
             return False # Indica falha
         else:
-            # Se não há atributo 'error' ou o erro é None, considera sucesso (ou um tipo diferente de resposta)
-            st.success("Usuário salvo com sucesso!")
+            st.success("Usuário salvo com sucesso!") [cite: 32]
             # Após salvar, recarregue a lista de usuários para refletir a mudança
-            carregar_usuarios() # Recarrega todos os usuários
+            carregar_usuarios() [cite: 33] # Recarrega todos os usuários
             return True # Indica sucesso
     except Exception as e:
-        st.error(f"Erro na operação de salvar usuário: {e}")
+        st.error(f"Erro na operação de salvar usuário: {e}") [cite: 33]
         return False # Indica falha
 
 
