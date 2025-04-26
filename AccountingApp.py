@@ -322,7 +322,7 @@ def pagina_login():
     st.title("Junior Fernandes")
     st.title("Acesse seu Financeiro")
     email = st.text_input("E-mail")
-    senha = st.text_input("Senha", type="password")
+    senha = st.text_input("senha", type="password")
 
     # Botões lado a lado com o botão de link à esquerda
     col1, col2 = st.columns([1, 1])
@@ -1721,7 +1721,7 @@ def render_edit_usuario_form():
                 }
 
                 if edit_senha: # Atualiza a senha apenas se uma nova foi digitada
-                    dados_para_atualizar["Senha"] = edit_senha # Lembre-se: em um app real, use hashing
+                    dados_para_atualizar["senha"] = edit_senha # Lembre-se: em um app real, use hashing
 
                 # Chame a função de salvar/atualizar, passando o ID do usuário e os dados
                 if salvar_usuario_supabase({"id": user_id, **dados_para_atualizar}): # Inclui o ID e os dados
