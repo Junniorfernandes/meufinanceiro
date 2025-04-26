@@ -1612,25 +1612,37 @@ def pagina_configuracoes():
                     novo_tipo = st.selectbox("Tipo", ["Cliente", "Administrador"], key="add_user_tipo")
                     submit_user_button = st.form_submit_button("Adicionar Usuário")
 
-                    if submit_user_button:
+                   if submit_user_button:
                         if not novo_nome or not novo_email or not nova_senha or not novo_tipo:
                             st.warning("Por favor, preencha todos os campos para o novo usuário.")
-                        # Verifica se o email já existe na lista carregada do Supabase
-                        elif any(u.get('email') == novo_email for u in st.session_state.get('usuarios', [])):
-                            st.warning(f"E-mail '{novo_email}' já cadastrado.")
                         else:
-                            # --- ADAPTAÇÃO SUPABASE: Salvar novo usuário no DB ---
-                            novo_usuario_data = {
-                                "nome": novo_nome,
-                                "email": novo_email,
-                                "senha": nova_senha, # Em um app real, use hashing de senha!
-                                "tipo": novo_tipo,
-                                "categorias_receita": [], # Inicializa categorias personalizadas
-                                # Não adiciona categorias_despesa aqui, mantendo o original
-                            }
-                            if salvar_usuario_supabase(novo_usuario_data): # Chama a função que salva no Supabase
-                                st.success(f"Usuário '{novo_nome}' adicionado com sucesso!")
-                                st.rerun() # Rerun após salvar no Supabase
+                            # --- ADAPTAÇÃO SUPABASE: Verificar duplicidade de e-mail no DB ---
+                            try:
+                                response_check = supabase.table("usuarios").select("email").eq("email", novo_email).execute()
+                                if response_check.error:
+                                    st.error(f"Erro ao verificar duplicidade de e-mail: {response_check.error.message}")
+                                    return # Para a execução em caso de erro no DB
+
+                                if response_check.data: # Se a lista de dados não estiver vazia, o e-mail já existe
+                                    st.warning(f"E-mail '{novo_email}' já cadastrado no banco de dados.")
+                                else:
+                                    # --- Prosseguir com a inserção APENAS SE O E-MAIL NÃO EXISTE ---
+                                    novo_usuario_data = {
+                                        "nome": novo_nome if novo_nome else "Novo Usuário",
+                                        "email": novo_email,
+                                        "senha": nova_senha, # Em um app real, use hashing de senha!
+                                        "tipo": novo_tipo,
+                                        "categorias_receita": [],
+                                        # Não adiciona categorias_despesa aqui, mantendo o original
+                                    }
+                                    # A função salvar_usuario_supabase fará o INSERT pois não há 'id' no dicionário
+                                    if salvar_usuario_supabase(novo_usuario_data):
+                                        st.success(f"Usuário '{novo_usuario_data['nome']}' adicionado com sucesso!")
+                                        st.rerun()
+                                    # --- FIM DA INSERÇÃO ---
+
+                            except Exception as e:
+                                st.error(f"Erro na operação de adicionar usuário: {e}")
                             # --- FIM ADAPTAÇÃO SUPABASE ---
 
             st.subheader("Lista de Usuários")
