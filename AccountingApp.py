@@ -1488,6 +1488,7 @@ def pagina_configuracoes():
                 # --- ADAPTAÇÃO SUPABASE: Atualizar usuário logado no DB ---
                 dados_para_atualizar = {
                     "nome": edit_nome_proprio,
+                    "email": usuario_logado.get('email'),  # Add this line to include email
                     "signatarioNome": signatario_nome,
                     "signatarioCargo": signatario_cargo,
                 }
@@ -1525,7 +1526,11 @@ def pagina_configuracoes():
                 if nova_categoria_receita.lower() not in [c.lower() for c in todas_categorias_receita_disponiveis]:
                     # --- ADAPTAÇÃO SUPABASE: Adicionar categoria na lista do usuário no DB ---
                     novas_categorias_receita_usuario = usuario_categorias_atuais + [nova_categoria_receita]
-                    dados_para_atualizar = {"categorias_receita": novas_categorias_receita_usuario}
+                    dados_para_atualizar = {
+                        "categorias_receita": novas_categorias_receita_usuario,
+                        "email": usuario_logado.get('email')  # Add this line to include email
+                    }
+
 
                     if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Atualiza no Supabase
                         # A função salvar_usuario_supabase já recarrega a lista de usuários no session_state
@@ -1715,10 +1720,12 @@ def render_edit_usuario_form():
 
             if submit_edit_user_button:
                 # --- ADAPTAÇÃO SUPABASE: Atualizar usuário no DB ---
-                dados_para_atualizar = {
-                    "Nome": edit_nome,
-                    "Tipo": edit_tipo,
-                }
+              dados_para_atualizar = {
+                "nome": edit_nome,  # Changed to lowercase for consistency
+                "email": usuario_a_editar.get('email'),  # Add this line to include email
+                "tipo": edit_tipo,  # Changed to lowercase for consistency
+}
+
                 if edit_senha: # Atualiza a senha apenas se uma nova foi digitada
                     dados_para_atualizar["Senha"] = edit_senha # Lembre-se: em um app real, use hashing
 
