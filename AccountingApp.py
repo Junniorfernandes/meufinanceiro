@@ -1441,50 +1441,42 @@ def pagina_configuracoes():
     st.title("Configurações")
 
     usuario_logado_email = st.session_state.get('usuario_atual_email')
-    # --- ADAPTAÇÃO SUPABASE: Encontre o usuário logado pela lista do session_state (carregada do DB) ---
     usuario_logado = None
     usuario_logado_id = None
     for u in st.session_state.get('usuarios', []):
         if u.get('email') == usuario_logado_email:
             usuario_logado = u
-            usuario_logado_id = u.get('id') # Pega o ID do Supabase
+            usuario_logado_id = u.get('id')
             break
-    # --- FIM ADAPTAÇÃO SUPABASE ---
 
-
-    # Verificação adicional para garantir que o usuário logado foi encontrado
     if usuario_logado:
         st.subheader(f"Editar Meu Perfil ({usuario_logado.get('tipo', 'Tipo Desconhecido')})")
         edit_nome_proprio = st.text_input("Nome", usuario_logado.get('nome', ''), key="edit_meu_nome")
         st.text_input("E-mail", usuario_logado.get('email', ''), disabled=True)
         nova_senha_propria = st.text_input("Nova Senha (deixe em branco para manter)", type="password", value="",
-                                            key="edit_minha_nova_senha")
+                                         key="edit_minha_nova_senha")
         confirmar_nova_senha_propria = st.text_input("Confirmar Nova Senha", type="password", value="",
-                                               key="edit_confirmar_minha_nova_senha")
+                                                    key="edit_confirmar_minha_nova_senha")
 
-        # CAMPOS DE ASSINATURA
-        signatario_nome = st.text_input("Nome de quem assina os relatórios", usuario_logado.get('SignatarioNome', ''),
-                                        key="signatario_nome")
-        signatario_cargo = st.text_input("Cargo de quem assina os relatórios", usuario_logado.get('SignatarioCargo', ''),
-                                          key="signatario_cargo")
+        signatario_nome = st.text_input("Nome de quem assina os relatórios", usuario_logado.get('signatarioNome', ''),
+                                      key="signatario_nome")
+        signatario_cargo = st.text_input("Cargo de quem assina os relatórios", usuario_logado.get('signatarioCargo', ''),
+                                       key="signatario_cargo")
 
         if st.button("Salvar Alterações no Perfil"):
             if nova_senha_propria == confirmar_nova_senha_propria:
-                # --- ADAPTAÇÃO SUPABASE: Atualizar usuário logado no DB ---
                 dados_para_atualizar = {
                     "nome": edit_nome_proprio,
-                    "email": usuario_logado.get('email'),  # Add this line to include email
+                    "email": usuario_logado.get('email'),
                     "signatarioNome": signatario_nome,
                     "signatarioCargo": signatario_cargo,
                 }
                 if nova_senha_propria:
-                     dados_para_atualizar["senha"] = nova_senha_propria # Repito: use hashing em produção!
-                
-                # Chame a função de salvar/atualizar, passando o ID do usuário logado
-                if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Inclui o ID e os dados
-                     st.session_state['usuario_atual_nome'] = edit_nome_proprio # Atualiza o nome na sessão
-                     st.rerun() # Rerun após salvar no Supabase
-                # --- FIM ADAPTAÇÃO SUPABASE ---
+                    dados_para_atualizar["senha"] = nova_senha_propria
+
+                if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}):
+                    st.session_state['usuario_atual_nome'] = edit_nome_proprio
+                    st.rerun()
             else:
                 st.error("As novas senhas não coincidem.")
     else:
