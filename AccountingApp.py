@@ -1493,7 +1493,10 @@ def pagina_configuracoes():
                 }
                 if nova_senha_propria:
                      dados_para_atualizar["senha"] = nova_senha_propria # Repito: use hashing em produção!
-                    
+                else:
+                     # --- GARANTA QUE ESTA LINHA ESTÁ PRESENTE E CORRETA ---
+                     # Inclui a senha atual se não houver nova senha (Recuperada do objeto usuario_logado)
+                     dados_para_atualizar["senha"] = usuario_logado.get('senha', '')    
                 dados_para_atualizar['nome'] = st.session_state.get('usuario_atual_nome')    
                 dados_para_atualizar['email'] = st.session_state.get('usuario_atual_email')
                 dados_para_atualizar["senha"] = usuario_logado.get('senha', '')
