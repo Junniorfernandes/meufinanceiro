@@ -1488,7 +1488,6 @@ def pagina_configuracoes():
                 # --- ADAPTAÇÃO SUPABASE: Atualizar usuário logado no DB ---
                 dados_para_atualizar = {
                     "nome": edit_nome_proprio,
-                    "email": usuario_atual.get('email'),
                     "signatarioNome": signatario_nome,
                     "signatarioCargo": signatario_cargo,
                 }
