@@ -129,26 +129,35 @@ def salvar_usuario_supabase(usuario_data):
             del update_data['id']
 
             # --- MODIFICAÇÃO INÍCIO ---
+            # Explicitamente remove 'senha' de update_data se não estiver presente nos dados originais
+            # Isso garante que a senha existente no DB não seja sobrescrita com null se não for alterada no formulário.
             if 'senha' not in usuario_data:
                 if 'senha' in update_data:
                     del update_data['senha']
             # --- MODIFICAÇÃO FIM ---
+
+            # --- INÍCIO PRINT DEBUG ---
+            print("DEBUG: Dados de ATUALIZAÇÃO sendo enviados para o Supabase (usuário ID:", user_id, "):", update_data)
+            # --- FIM PRINT DEBUG ---
 
             response = supabase.table("usuarios").update(update_data).eq("id", user_id).execute()
         else: # É uma inserção
             insert_data = usuario_data.copy()
             if 'id' in insert_data:
                  del insert_data['id']
+            # --- INÍCIO PRINT DEBUG ---
+            print("DEBUG: Dados de INSERÇÃO sendo enviados para o Supabase (usuário email:", insert_data.get('email'), "):", insert_data)
+            # --- FIM PRINT DEBUG ---
             response = supabase.table("usuarios").insert(insert_data).execute()
 
-        # Verifica se a resposta possui o atributo 'error' E se há um erro reportado
-        # >>> Verifique a indentação desta linha e das linhas abaixo dela <<<
-        if hasattr(response, 'error') and response.error: # Esta é a linha 159 no seu erro
+        # Verifica se a resposta possui o atributo 'error' E se há um erro reportado (mantido do fix anterior)
+        if hasattr(response, 'error') and response.error:
             st.error(f"Erro ao salvar usuário no Supabase: {response.error.message}")
             return False # Indica falha
         else:
             st.success("Usuário salvo com sucesso!")
-            carregar_usuarios()
+            # Após salvar, recarregue a lista de usuários para refletir a mudança
+            carregar_usuarios() # Recarrega todos os usuários
             return True # Indica sucesso
     except Exception as e:
         st.error(f"Erro na operação de salvar usuário: {e}")
