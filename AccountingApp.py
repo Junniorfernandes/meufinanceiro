@@ -1494,6 +1494,7 @@ def pagina_configuracoes():
                 if nova_senha_propria:
                      dados_para_atualizar["senha"] = nova_senha_propria # Repito: use hashing em produção!
                     
+                dados_para_atualizar['nome'] = st.session_state.get('usuario_atual_nome')    
                 dados_para_atualizar['email'] = st.session_state.get('usuario_atual_email')
                 # Chame a função de salvar/atualizar, passando o ID do usuário logado
                 if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Inclui o ID e os dados
@@ -1528,6 +1529,7 @@ def pagina_configuracoes():
                     novas_categorias_receita_usuario = usuario_categorias_atuais + [nova_categoria_receita]
                     dados_para_atualizar = {"categorias_receita": novas_categorias_receita_usuario}
                     
+                    dados_para_atualizar['nome'] = st.session_state.get('usuario_atual_nome')
                     dados_para_atualizar['email'] = st.session_state.get('usuario_atual_email')
                     if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Atualiza no Supabase
                         # A função salvar_usuario_supabase já recarrega a lista de usuários no session_state
@@ -1567,7 +1569,8 @@ def pagina_configuracoes():
                     if col_del.button("Excluir", key=f"del_cat_receita_{categoria}_{i}"): # Use categoria no key para unicidade
                         novas_categorias_receita_usuario = [c for c in usuario_categorias_atuais if c != categoria]
                         dados_para_atualizar = {"categorias_receita": novas_categorias_receita_usuario}
-
+                        
+                        dados_para_atualizar['nome'] = st.session_state.get('usuario_atual_nome')
                         dados_para_atualizar['email'] = st.session_state.get('usuario_atual_email')
                         if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Atualiza no Supabase
                             # A função salvar_usuario_supabase já recarrega a lista de usuários no session_state
