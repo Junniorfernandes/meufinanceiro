@@ -122,28 +122,43 @@ def salvar_usuario_supabase(usuario_data):
     if not usuario_data.get('email'):
         st.error("O campo de e-mail é obrigatório para salvar o usuário.")
         return False
+    # Esta função é genérica para inserir ou atualizar lançamentos.
+    # Se usuario_data tiver 'id', tenta atualizar. Caso contrário, insere.
     try:
-        user_id = usuario_data.get('id')
-        if user_id is not None:
+        # Determine if it's an update or insert based on the presence AND validity of 'id'
+        user_id = usuario_data.get('id') # Tenta obter o ID, retorna None se a chave não existir
+        if user_id is not None: # Se 'id' existe E não é None, assumimos que é uma ATUALIZAÇÃO
+            # É uma atualização
+            # Cria uma cópia dos dados para remover o 'id' com segurança antes de enviar para o update
             update_data = usuario_data.copy()
-            del update_data['id']
+            del update_data['id'] # Remove a chave 'id' do payload de dados para o update
+
+            # Executa a operação de atualização no Supabase, filtrando pelo ID
             response = supabase.table("usuarios").update(update_data).eq("id", user_id).execute()
-        else:
+        else: # Se 'id' é None (chave não existe ou valor é None), assumimos que é uma INSERÇÃO
+            # É uma inserção
+            # Cria uma cópia dos dados para garantir que a chave 'id' NÃO esteja no payload de inserção
             insert_data = usuario_data.copy()
             if 'id' in insert_data:
-                del insert_data['id']
+                 # Remove a chave 'id' se ela existir (especialmente se for {"id": None, ...})
+                 del insert_data['id']
+
+            # Executa a operação de inserção no Supabase
             response = supabase.table("usuarios").insert(insert_data).execute()
 
+        # Verifica se a resposta possui o atributo 'error' E se há um erro reportado (mantido do fix anterior)
         if hasattr(response, 'error') and response.error:
             st.error(f"Erro ao salvar usuário no Supabase: {response.error.message}")
-            return False
+            return False # Indica falha
         else:
+            # Se não há atributo 'error' ou o erro é None, considera sucesso (ou um tipo diferente de resposta)
             st.success("Usuário salvo com sucesso!")
-            carregar_usuarios()
-            return True
+            # Após salvar, recarregue a lista de usuários para refletir a mudança
+            carregar_usuarios() # Recarrega todos os usuários
+            return True # Indica sucesso
     except Exception as e:
         st.error(f"Erro na operação de salvar usuário: {e}")
-        return False
+        return False # Indica falha
 
 
 def excluir_usuario_db(user_id):
@@ -1441,42 +1456,50 @@ def pagina_configuracoes():
     st.title("Configurações")
 
     usuario_logado_email = st.session_state.get('usuario_atual_email')
+    # --- ADAPTAÇÃO SUPABASE: Encontre o usuário logado pela lista do session_state (carregada do DB) ---
     usuario_logado = None
     usuario_logado_id = None
     for u in st.session_state.get('usuarios', []):
         if u.get('email') == usuario_logado_email:
             usuario_logado = u
-            usuario_logado_id = u.get('id')
+            usuario_logado_id = u.get('id') # Pega o ID do Supabase
             break
+    # --- FIM ADAPTAÇÃO SUPABASE ---
 
+
+    # Verificação adicional para garantir que o usuário logado foi encontrado
     if usuario_logado:
         st.subheader(f"Editar Meu Perfil ({usuario_logado.get('tipo', 'Tipo Desconhecido')})")
         edit_nome_proprio = st.text_input("Nome", usuario_logado.get('nome', ''), key="edit_meu_nome")
         st.text_input("E-mail", usuario_logado.get('email', ''), disabled=True)
         nova_senha_propria = st.text_input("Nova Senha (deixe em branco para manter)", type="password", value="",
-                                         key="edit_minha_nova_senha")
+                                            key="edit_minha_nova_senha")
         confirmar_nova_senha_propria = st.text_input("Confirmar Nova Senha", type="password", value="",
-                                                    key="edit_confirmar_minha_nova_senha")
+                                               key="edit_confirmar_minha_nova_senha")
 
-        signatario_nome = st.text_input("Nome de quem assina os relatórios", usuario_logado.get('signatarioNome', ''),
-                                      key="signatario_nome")
-        signatario_cargo = st.text_input("Cargo de quem assina os relatórios", usuario_logado.get('signatarioCargo', ''),
-                                       key="signatario_cargo")
+        # CAMPOS DE ASSINATURA
+        signatario_nome = st.text_input("Nome de quem assina os relatórios", usuario_logado.get('SignatarioNome', ''),
+                                        key="signatario_nome")
+        signatario_cargo = st.text_input("Cargo de quem assina os relatórios", usuario_logado.get('SignatarioCargo', ''),
+                                          key="signatario_cargo")
 
         if st.button("Salvar Alterações no Perfil"):
             if nova_senha_propria == confirmar_nova_senha_propria:
+                # --- ADAPTAÇÃO SUPABASE: Atualizar usuário logado no DB ---
                 dados_para_atualizar = {
                     "nome": edit_nome_proprio,
-                    "email": usuario_logado.get('email'),
+                    "email": usuario_logado.get('email'),  # Add this line to include email
                     "signatarioNome": signatario_nome,
                     "signatarioCargo": signatario_cargo,
                 }
                 if nova_senha_propria:
-                    dados_para_atualizar["senha"] = nova_senha_propria
-
-                if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}):
-                    st.session_state['usuario_atual_nome'] = edit_nome_proprio
-                    st.rerun()
+                     dados_para_atualizar["senha"] = nova_senha_propria # Repito: use hashing em produção!
+                
+                # Chame a função de salvar/atualizar, passando o ID do usuário logado
+                if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Inclui o ID e os dados
+                     st.session_state['usuario_atual_nome'] = edit_nome_proprio # Atualiza o nome na sessão
+                     st.rerun() # Rerun após salvar no Supabase
+                # --- FIM ADAPTAÇÃO SUPABASE ---
             else:
                 st.error("As novas senhas não coincidem.")
     else:
