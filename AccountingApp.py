@@ -77,12 +77,7 @@ def carregar_usuarios():
         # Garante que cada usuário tem a lista de categorias (se a coluna jsonb for nula no DB, retorna None)
         for usuario in st.session_state['usuarios']:
             if 'categorias_receita' not in usuario or usuario['categorias_receita'] is None:
-                usuario['categorias_receita'] = []
-
-            if not usuario.get('email'):
-                st.error(f"O usuário {usuario.get('nome', 'Sem Nome')} não possui e-mail. Corrija no Supabase para evitar erros.")
-                st.stop()
-
+                 usuario['categorias_receita'] = []
     except Exception as e:
         st.error(f"Erro ao carregar usuários do Supabase: {e}")
         st.session_state['usuarios'] = [] # Define como lista vazia em caso de erro
@@ -90,17 +85,17 @@ def carregar_usuarios():
     # --- INCLUA O CÓDIGO DO ADMINISTRADOR AQUI ---
     # Adapte esta parte para verificar se o admin existe NO SUPABASE antes de tentar inserir
     novo_admin = {
-        "nome": "Junior Fernandes",
-        "email": "valmirfernandescontabilidade@gmail.com",
-        "senha": "114316", # Cuidado: Armazenar senhas em texto plano não é seguro. Considere usar hashing de senha.
-        "tipo": "Administrador",
+        "Nome": "Junior Fernandes",
+        "Email": "valmirfernandescontabilidade@gmail.com",
+        "Senha": "114316", # Cuidado: Armazenar senhas em texto plano não é seguro. Considere usar hashing de senha.
+        "Tipo": "Administrador",
         "categorias_receita": [], # Inicializa com lista vazia
-        "signatarioNome": "", # Pode preencher se necessário
-        "signatarioCargo": "" # Pode preencher se necessário
+        "SignatarioNome": "", # Pode preencher se necessário
+        "SignatarioCargo": "" # Pode preencher se necessário
     }
 
     # Verifica se o usuário já existe no Supabase antes de adicionar para evitar duplicação
-    admin_existente = any(u.get('email') == novo_admin['email'] for u in st.session_state.get('usuarios', []))
+    admin_existente = any(u.get('Email') == novo_admin['Email'] for u in st.session_state.get('usuarios', []))
 
     if not admin_existente:
         try:
@@ -119,42 +114,23 @@ def carregar_usuarios():
 
 
 def salvar_usuario_supabase(usuario_data):
-    if not usuario_data.get('email'):
-        st.error("O campo de e-mail é obrigatório para salvar o usuário.")
-        return False
-    # Esta função é genérica para inserir ou atualizar lançamentos.
+    # Esta função é genérica para inserir ou atualizar.
     # Se usuario_data tiver 'id', tenta atualizar. Caso contrário, insere.
     try:
-        # Determine if it's an update or insert based on the presence AND validity of 'id'
-        user_id = usuario_data.get('id') # Tenta obter o ID, retorna None se a chave não existir
-        if user_id is not None: # Se 'id' existe E não é None, assumimos que é uma ATUALIZAÇÃO
+        if 'id' in usuario_data and usuario_data['id'] is not None:
             # É uma atualização
-            # Cria uma cópia dos dados para remover o 'id' com segurança antes de enviar para o update
-            update_data = usuario_data.copy()
-            del update_data['id'] # Remove a chave 'id' do payload de dados para o update
-
-            # Executa a operação de atualização no Supabase, filtrando pelo ID
-            response = supabase.table("usuarios").update(update_data).eq("id", user_id).execute()
-        else: # Se 'id' é None (chave não existe ou valor é None), assumimos que é uma INSERÇÃO
+            user_id = usuario_data.pop('id') # Remove o 'id' dos dados para a atualização
+            response = supabase.table("usuarios").update(usuario_data).eq("id", user_id).execute()
+        else:
             # É uma inserção
-            # Cria uma cópia dos dados para garantir que a chave 'id' NÃO esteja no payload de inserção
-            insert_data = usuario_data.copy()
-            if 'id' in insert_data:
-                 # Remove a chave 'id' se ela existir (especialmente se for {"id": None, ...})
-                 del insert_data['id']
+            response = supabase.table("usuarios").insert(usuario_data).execute()
 
-            # Executa a operação de inserção no Supabase
-            response = supabase.table("usuarios").insert(insert_data).execute()
-
-        # Verifica se a resposta possui o atributo 'error' E se há um erro reportado (mantido do fix anterior)
-        if hasattr(response, 'error') and response.error:
+        if response.error:
             st.error(f"Erro ao salvar usuário no Supabase: {response.error.message}")
             return False # Indica falha
         else:
-            # Se não há atributo 'error' ou o erro é None, considera sucesso (ou um tipo diferente de resposta)
-            st.success("Usuário salvo com sucesso!")
             # Após salvar, recarregue a lista de usuários para refletir a mudança
-            carregar_usuarios() # Recarrega todos os usuários
+            carregar_usuarios()
             return True # Indica sucesso
     except Exception as e:
         st.error(f"Erro na operação de salvar usuário: {e}")
@@ -200,7 +176,7 @@ def carregar_lancamentos():
 def salvar_lancamento_supabase(lancamento_data):
     # Esta função é genérica para inserir ou atualizar lançamentos.
     # Se lancamento_data tiver 'id', tenta atualizar. Caso contrário, insere.
-    try: # <-- Início do bloco try
+    try:
         if 'id' in lancamento_data and lancamento_data['id'] is not None:
             # É uma atualização
             lancamento_id = lancamento_data.pop('id') # Remove o 'id' dos dados para a atualização
@@ -212,17 +188,15 @@ def salvar_lancamento_supabase(lancamento_data):
             #     del lancamento_data['id']
             response = supabase.table("lancamentos").insert(lancamento_data).execute()
 
-        # Verifica se a resposta possui o atributo 'error' E se há um erro reportado
-        if hasattr(response, 'error') and response.error:
+        if response.error:
             st.error(f"Erro ao salvar lançamento no Supabase: {response.error.message}")
             return False # Indica falha
         else:
-            # Se não há atributo 'error' ou o erro é None, considera sucesso (ou um tipo diferente de resposta)
             st.success("Lançamento salvo com sucesso!")
             # Após salvar, recarregue a lista de lançamentos para refletir a mudança
             carregar_lancamentos() # Recarrega todos os lançamentos
             return True # Indica sucesso
-    except Exception as e: # <-- O bloco except que precisa estar aqui, alinhado com o try
+    except Exception as e:
         st.error(f"Erro na operação de salvar lançamento: {e}")
         return False # Indica falha
 
@@ -383,16 +357,16 @@ def pagina_login():
         # Uma abordagem melhor seria usar o módulo de autenticação do Supabase
         usuario_encontrado = None
         for i, usuario in enumerate(st.session_state.get('usuarios', [])):
-            if usuario.get('email') == email and usuario.get('senha') == senha:
+            if usuario.get('Email') == email and usuario.get('Senha') == senha:
                 usuario_encontrado = usuario
                 st.session_state['usuario_atual_index'] = i # Mantém o índice local por compatibilidade, mas o ID do DB é melhor
                 break
 
         if usuario_encontrado:
             st.session_state['autenticado'] = True
-            st.session_state['usuario_atual_email'] = usuario_encontrado.get('email')
-            st.session_state['usuario_atual_nome'] = usuario_encontrado.get('nome')
-            st.session_state['tipo_usuario_atual'] = usuario_encontrado.get('tipo')
+            st.session_state['usuario_atual_email'] = usuario_encontrado.get('Email')
+            st.session_state['usuario_atual_nome'] = usuario_encontrado.get('Nome')
+            st.session_state['tipo_usuario_atual'] = usuario_encontrado.get('Tipo')
 
             # Carrega as categorias de receita personalizadas do usuário logado
             usuario_categorias_receita = usuario_encontrado.get('categorias_receita', [])
@@ -607,8 +581,8 @@ def exibir_resumo_central():
             # Encontre o e-mail do usuário selecionado pelo nome na lista carregada do Supabase
             usuario_selecionado_email = None
             for u in st.session_state.get('usuarios', []):
-                if u.get('nome', 'Usuário Sem Nome') == usuario_selecionado_nome:
-                    usuario_selecionado_email = u.get('email')
+                if u.get('Nome', 'Usuário Sem Nome') == usuario_selecionado_nome:
+                    usuario_selecionado_email = u.get('Email')
                     break
 
             if usuario_selecionado_email:
@@ -834,7 +808,7 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
     signatario_cargo = ""
     usuario_atual_email = st.session_state.get('usuario_atual_email')
     for u in st.session_state.get('usuarios', []):
-        if u.get('email') == usuario_atual_email:
+        if u.get('Email') == usuario_atual_email:
             signatario_nome = u.get("SignatarioNome", "")
             signatario_cargo = u.get("SignatarioCargo", "")
             break # Encontrou o usuário logado, pode sair do loop
@@ -1090,7 +1064,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     signatario_cargo = ""
     usuario_atual_email = st.session_state.get('usuario_atual_email')
     for u in st.session_state.get('usuarios', []):
-        if u.get('email') == usuario_atual_email:
+        if u.get('Email') == usuario_atual_email:
             signatario_nome = u.get("SignatarioNome", "")
             signatario_cargo = u.get("SignatarioCargo", "")
             break # Encontrou o usuário logado
@@ -1169,7 +1143,7 @@ def exibir_lancamentos():
         # --- ADICIONAR SELECTBOX PARA ESCOLHER O USUÁRIO ---
         # Crie uma lista de opções para o selectbox, incluindo a opção "Todos os Usuários"
         # Use a lista de usuários carregada do Supabase
-        opcoes_usuarios = ["Todos os Usuários"] + [u.get('nome', 'Usuário Sem Nome') for u in
+        opcoes_usuarios = ["Todos os Usuários"] + [u.get('Nome', 'Usuário Sem Nome') for u in
                                                    st.session_state.get('usuarios', [])]
 
         # Adicione o selectbox
@@ -1191,8 +1165,8 @@ def exibir_lancamentos():
             # Encontre o e-mail do usuário selecionado pelo nome
             usuario_selecionado_email = None
             for u in st.session_state.get('usuarios', []):
-                if u.get('nome', 'Usuário Sem Nome') == usuario_selecionado_nome:
-                    usuario_selecionado_email = u.get('email')
+                if u.get('Nome', 'Usuário Sem Nome') == usuario_selecionado_nome:
+                    usuario_selecionado_email = u.get('Email')
                     break
 
             if usuario_selecionado_email:
@@ -1460,7 +1434,7 @@ def pagina_configuracoes():
     usuario_logado = None
     usuario_logado_id = None
     for u in st.session_state.get('usuarios', []):
-        if u.get('email') == usuario_logado_email:
+        if u.get('Email') == usuario_logado_email:
             usuario_logado = u
             usuario_logado_id = u.get('id') # Pega o ID do Supabase
             break
@@ -1469,9 +1443,9 @@ def pagina_configuracoes():
 
     # Verificação adicional para garantir que o usuário logado foi encontrado
     if usuario_logado:
-        st.subheader(f"Editar Meu Perfil ({usuario_logado.get('tipo', 'Tipo Desconhecido')})")
-        edit_nome_proprio = st.text_input("Nome", usuario_logado.get('nome', ''), key="edit_meu_nome")
-        st.text_input("E-mail", usuario_logado.get('email', ''), disabled=True)
+        st.subheader(f"Editar Meu Perfil ({usuario_logado.get('Tipo', 'Tipo Desconhecido')})")
+        edit_nome_proprio = st.text_input("Nome", usuario_logado.get('Nome', ''), key="edit_meu_nome")
+        st.text_input("E-mail", usuario_logado.get('Email', ''), disabled=True)
         nova_senha_propria = st.text_input("Nova Senha (deixe em branco para manter)", type="password", value="",
                                             key="edit_minha_nova_senha")
         confirmar_nova_senha_propria = st.text_input("Confirmar Nova Senha", type="password", value="",
@@ -1487,14 +1461,13 @@ def pagina_configuracoes():
             if nova_senha_propria == confirmar_nova_senha_propria:
                 # --- ADAPTAÇÃO SUPABASE: Atualizar usuário logado no DB ---
                 dados_para_atualizar = {
-                    "nome": edit_nome_proprio,
-                    "email": usuario_logado.get('email'),  # Add this line to include email
-                    "signatarioNome": signatario_nome,
-                    "signatarioCargo": signatario_cargo,
+                    "Nome": edit_nome_proprio,
+                    "SignatarioNome": signatario_nome,
+                    "SignatarioCargo": signatario_cargo,
                 }
                 if nova_senha_propria:
-                     dados_para_atualizar["senha"] = nova_senha_propria # Repito: use hashing em produção!
-                
+                     dados_para_atualizar["Senha"] = nova_senha_propria # Repito: use hashing em produção!
+
                 # Chame a função de salvar/atualizar, passando o ID do usuário logado
                 if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Inclui o ID e os dados
                      st.session_state['usuario_atual_nome'] = edit_nome_proprio # Atualiza o nome na sessão
@@ -1526,11 +1499,7 @@ def pagina_configuracoes():
                 if nova_categoria_receita.lower() not in [c.lower() for c in todas_categorias_receita_disponiveis]:
                     # --- ADAPTAÇÃO SUPABASE: Adicionar categoria na lista do usuário no DB ---
                     novas_categorias_receita_usuario = usuario_categorias_atuais + [nova_categoria_receita]
-                    dados_para_atualizar = {
-                        "categorias_receita": novas_categorias_receita_usuario,
-                        "email": usuario_logado.get('email')  # Add this line to include email
-                    }
-
+                    dados_para_atualizar = {"categorias_receita": novas_categorias_receita_usuario}
 
                     if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Atualiza no Supabase
                         # A função salvar_usuario_supabase já recarrega a lista de usuários no session_state
@@ -1606,15 +1575,15 @@ def pagina_configuracoes():
                         if not novo_nome or not novo_email or not nova_senha or not novo_tipo:
                             st.warning("Por favor, preencha todos os campos para o novo usuário.")
                         # Verifica se o email já existe na lista carregada do Supabase
-                        elif any(u.get('email') == novo_email for u in st.session_state.get('usuarios', [])):
+                        elif any(u.get('Email') == novo_email for u in st.session_state.get('usuarios', [])):
                             st.warning(f"E-mail '{novo_email}' já cadastrado.")
                         else:
                             # --- ADAPTAÇÃO SUPABASE: Salvar novo usuário no DB ---
                             novo_usuario_data = {
-                                "nome": novo_nome,
-                                "email": novo_email,
-                                "senha": nova_senha, # Em um app real, use hashing de senha!
-                                "tipo": novo_tipo,
+                                "Nome": novo_nome,
+                                "Email": novo_email,
+                                "Senha": nova_senha, # Em um app real, use hashing de senha!
+                                "Tipo": novo_tipo,
                                 "categorias_receita": [], # Inicializa categorias personalizadas
                                 # Não adiciona categorias_despesa aqui, mantendo o original
                             }
@@ -1633,7 +1602,7 @@ def pagina_configuracoes():
 
                 # Não liste o próprio usuário Admin logado para evitar que ele se exclua acidentalmente
                 usuarios_para_listar = [u for u in st.session_state.get('usuarios', []) if
-                                        u.get('email') != usuario_logado_email]
+                                        u.get('Email') != usuario_logado_email]
 
                 # --- ADAPTAÇÃO SUPABASE: Iterar sobre a lista carregada do DB e usar IDs ---
                 for i, usuario in enumerate(usuarios_para_listar):
@@ -1643,9 +1612,9 @@ def pagina_configuracoes():
                         continue # Pula usuários sem ID
 
                     col1, col2, col3, col4 = st.columns([3, 4, 2, 3])
-                    col1.write(usuario.get('nome', ''))
-                    col2.write(usuario.get('email', ''))
-                    col3.write(usuario.get('tipo', ''))
+                    col1.write(usuario.get('Nome', ''))
+                    col2.write(usuario.get('Email', ''))
+                    col3.write(usuario.get('Tipo', ''))
 
                     with col4:
                         col_edit_user, col_del_user = st.columns(2)
@@ -1657,7 +1626,7 @@ def pagina_configuracoes():
                                 st.rerun()
                         with col_del_user:
                             # Só permite excluir se não for o usuário logado
-                            if usuario.get('email') != usuario_logado_email:
+                            if usuario.get('Email') != usuario_logado_email:
                                 # --- ADAPTAÇÃO SUPABASE: Chamar a função de exclusão do DB ---
                                 if st.button("Excluir", key=f"del_user_{user_id}", help="Excluir este usuário"): # Usa o ID do Supabase para o key
                                     if excluir_usuario_db(user_id): # Chama a função que exclui no Supabase
@@ -1695,7 +1664,7 @@ def render_edit_usuario_form():
 
     # Verifica se o usuário logado é administrador e não está tentando editar a si mesmo através deste modal
     usuario_logado_email = st.session_state.get('usuario_atual_email')
-    if st.session_state.get('tipo_usuario_atual') != 'Administrador' or usuario_a_editar.get('email') == usuario_logado_email:
+    if st.session_state.get('tipo_usuario_atual') != 'Administrador' or usuario_a_editar.get('Email') == usuario_logado_email:
         st.error("Você não tem permissão para editar este usuário desta forma.")
         st.session_state['editar_usuario_data'] = None
         st.session_state['editar_usuario_index'] = None
@@ -1703,29 +1672,27 @@ def render_edit_usuario_form():
         return
 
     # Use o ID do Supabase no key do expander e do formulário
-    with st.expander(f"Editar Usuário: {usuario_a_editar.get('nome', '')} (ID: {user_id})", expanded=True):
-        st.subheader(f"Editar Usuário: {usuario_a_editar.get('nome', '')}")
+    with st.expander(f"Editar Usuário: {usuario_a_editar.get('Nome', '')} (ID: {user_id})", expanded=True):
+        st.subheader(f"Editar Usuário: {usuario_a_editar.get('Nome', '')}")
         with st.form(key=f"edit_usuario_form_{user_id}"): # Usa o ID do Supabase para o key do formulário
             # Usa os dados do usuario_a_editar (carregados do DB) para preencher o formulário
-            edit_nome = st.text_input("Nome", usuario_a_editar.get('nome', ''),
+            edit_nome = st.text_input("Nome", usuario_a_editar.get('Nome', ''),
                                       key=f"edit_user_nome_{user_id}") # Usa o ID no key
-            st.text_input("E-mail", usuario_a_editar.get('email', ''), disabled=True,
+            st.text_input("E-mail", usuario_a_editar.get('Email', ''), disabled=True,
                           key=f"edit_user_email_{user_id}") # Usa o ID no key
             edit_senha = st.text_input("Nova Senha (deixe em branco para manter)", type="password", value="",
                                      key=f"edit_user_senha_{user_id}") # Usa o ID no key
             edit_tipo = st.selectbox("Tipo", ["Cliente", "Administrador"], index=["Cliente", "Administrador"].index(
-                usuario_a_editar.get('tipo', 'Cliente')), key=f"edit_user_tipo_{user_id}") # Usa o ID no key
+                usuario_a_editar.get('Tipo', 'Cliente')), key=f"edit_user_tipo_{user_id}") # Usa o ID no key
 
             submit_edit_user_button = st.form_submit_button("Salvar Edição do Usuário")
 
             if submit_edit_user_button:
                 # --- ADAPTAÇÃO SUPABASE: Atualizar usuário no DB ---
                 dados_para_atualizar = {
-                    "nome": edit_nome,  # Changed to lowercase for consistency
-                    "email": usuario_a_editar.get('email'),  # Add this line to include email
-                    "tipo": edit_tipo,  # Changed to lowercase for consistency
+                    "Nome": edit_nome,
+                    "Tipo": edit_tipo,
                 }
-
                 if edit_senha: # Atualiza a senha apenas se uma nova foi digitada
                     dados_para_atualizar["Senha"] = edit_senha # Lembre-se: em um app real, use hashing
 
