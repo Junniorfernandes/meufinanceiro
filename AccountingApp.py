@@ -77,7 +77,12 @@ def carregar_usuarios():
         # Garante que cada usuário tem a lista de categorias (se a coluna jsonb for nula no DB, retorna None)
         for usuario in st.session_state['usuarios']:
             if 'categorias_receita' not in usuario or usuario['categorias_receita'] is None:
-                 usuario['categorias_receita'] = []
+                usuario['categorias_receita'] = []
+
+            if not usuario.get('email'):
+                st.error(f"O usuário {usuario.get('nome', 'Sem Nome')} não possui e-mail. Corrija no Supabase para evitar erros.")
+                st.stop()
+
     except Exception as e:
         st.error(f"Erro ao carregar usuários do Supabase: {e}")
         st.session_state['usuarios'] = [] # Define como lista vazia em caso de erro
