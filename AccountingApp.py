@@ -1496,6 +1496,8 @@ def pagina_configuracoes():
                     
                 dados_para_atualizar['nome'] = st.session_state.get('usuario_atual_nome')    
                 dados_para_atualizar['email'] = st.session_state.get('usuario_atual_email')
+                dados_para_atualizar["senha"] = usuario_logado.get('senha', '')
+                
                 # Chame a função de salvar/atualizar, passando o ID do usuário logado
                 if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Inclui o ID e os dados
                      st.session_state['usuario_atual_nome'] = edit_nome_proprio # Atualiza o nome na sessão
@@ -1531,6 +1533,8 @@ def pagina_configuracoes():
                     
                     dados_para_atualizar['nome'] = st.session_state.get('usuario_atual_nome')
                     dados_para_atualizar['email'] = st.session_state.get('usuario_atual_email')
+                    dados_para_atualizar["senha"] = usuario_logado.get('senha', '')
+                    
                     if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Atualiza no Supabase
                         # A função salvar_usuario_supabase já recarrega a lista de usuários no session_state
                         # e a lógica de login/inicialização já atualiza st.session_state['todas_categorias_receita']
@@ -1572,6 +1576,8 @@ def pagina_configuracoes():
                         
                         dados_para_atualizar['nome'] = st.session_state.get('usuario_atual_nome')
                         dados_para_atualizar['email'] = st.session_state.get('usuario_atual_email')
+                        dados_para_atualizar["senha"] = usuario_logado.get('senha', '')
+                        
                         if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Atualiza no Supabase
                             # A função salvar_usuario_supabase já recarrega a lista de usuários no session_state
                             # e a lógica de login/inicialização já atualiza st.session_state['todas_categorias_receita']
