@@ -1719,8 +1719,8 @@ def render_edit_usuario_form():
             if submit_edit_user_button:
                 # --- ADAPTAÇÃO SUPABASE: Atualizar usuário no DB ---
                 dados_para_atualizar = {
-                    "Nome": edit_nome,
-                    "Tipo": edit_tipo,
+                    "nome": edit_nome,
+                    "tipo": edit_tipo,
                 }
                 if edit_senha: # Atualiza a senha apenas se uma nova foi digitada
                     dados_para_atualizar["Senha"] = edit_senha # Lembre-se: em um app real, use hashing
