@@ -1719,21 +1719,35 @@ def render_edit_usuario_form():
             submit_edit_user_button = st.form_submit_button("Salvar Edição do Usuário")
 
             if submit_edit_user_button:
-                # --- ADAPTAÇÃO SUPABASE: Atualizar usuário no DB ---
+                # ... (validações e coleta de dados dos inputs) ...
+
+                # Remova estas linhas que atualizam a lista local e chamam salvar_usuarios()
+                # st.session_state['usuarios'][index]['Nome'] = edit_nome
+                # if edit_senha:
+                #     st.session_state['usuarios'][index]['Senha'] = edit_senha
+                # st.session_state['usuarios'][index]['Tipo'] = edit_tipo
+                # salvar_usuarios() # <--- REMOVA ESTA LINHA
+
+                # --- ADAPTAÇÃO SUPABASE: Chamar a função de salvar no Supabase ---
+                # Crie um dicionário com os dados atualizados para enviar ao Supabase
                 dados_para_atualizar = {
-                    "nome": edit_nome,  # Changed to lowercase for consistency
-                    "email": usuario_a_editar.get('email'),  # Add this line to include email
-                    "tipo": edit_tipo,  # Changed to lowercase for consistency
+                    "id": usuario_a_editar.get('id'), # Inclua o ID do usuário original
+                    "nome": edit_nome, # Use as chaves minusculas conforme esperado pelo Supabase
+                    "tipo": edit_tipo, # Use as chaves minusculas
+                    "email": usuario_a_editar.get('email'), # Inclua o email também
+                    "signatarioNome": st.session_state['editar_usuario_data'].get('SignatarioNome'), # Mantenha os campos de signatario
+                    "signatarioCargo": st.session_state['editar_usuario_data'].get('SignatarioCargo'), # Mantenha os campos de signatario
+                    # Inclua outras colunas do usuário que possam ter sido editadas
                 }
 
-                if edit_senha: # Atualiza a senha apenas se uma nova foi digitada
-                    dados_para_atualizar["Senha"] = edit_senha # Lembre-se: em um app real, use hashing
+                if edit_senha:
+                    dados_para_atualizar["senha"] = edit_senha # Use a chave minuscula
 
-                # Chame a função de salvar/atualizar, passando o ID do usuário e os dados
-                if salvar_usuario_supabase({"id": user_id, **dados_para_atualizar}): # Inclui o ID e os dados
-                    st.success("Usuário atualizado com sucesso!")
+                # Chame a função que salva no Supabase, passando os dados atualizados (incluindo o ID)
+                if salvar_usuario_supabase(dados_para_atualizar): # <-- CHAME A FUNÇÃO SUPABASE
+                    st.success("Usuário atualizado com sucesso no Supabase!") # Mensagem ajustada
+                    st.session_state['editar_usuario_index'] = None
                     st.session_state['editar_usuario_data'] = None
-                    st.session_state['editar_usuario_index'] = None # Limpa o índice local também
                     st.rerun() # Rerun após salvar no Supabase
                 # --- FIM ADAPTAÇÃO SUPABASE ---
 
