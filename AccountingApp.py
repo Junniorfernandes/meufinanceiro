@@ -1549,7 +1549,7 @@ def pagina_configuracoes():
         # Exibe as categorias personalizadas com opção de exclusão
         if usuario_categorias_atuais:
             st.write("Clique no botão 'Excluir' ao lado de uma categoria personalizada para removê-la.")
-
+            "email": usuario_logado.get('email')  # Add this line to include email
             # Filtra lançamentos do usuário logado para verificar uso da categoria (usa a lista carregada do DB)
             lancamentos_do_usuario = [
                 l for l in st.session_state.get("lancamentos", [])
