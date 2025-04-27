@@ -1548,8 +1548,9 @@ def pagina_configuracoes():
         st.subheader("Suas Categorias de Receitas Personalizadas")
         # Exibe as categorias personalizadas com opção de exclusão
         if usuario_categorias_atuais:
-            st.write("Clique no botão 'Excluir' ao lado de uma categoria personalizada para removê-la.")
             "email": usuario_logado.get('email')  # Add this line to include email
+            st.write("Clique no botão 'Excluir' ao lado de uma categoria personalizada para removê-la.")
+    
             # Filtra lançamentos do usuário logado para verificar uso da categoria (usa a lista carregada do DB)
             lancamentos_do_usuario = [
                 l for l in st.session_state.get("lancamentos", [])
