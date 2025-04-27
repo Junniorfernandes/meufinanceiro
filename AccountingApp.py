@@ -835,8 +835,8 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
     usuario_atual_email = st.session_state.get('usuario_atual_email')
     for u in st.session_state.get('usuarios', []):
         if u.get('email') == usuario_atual_email:
-            signatario_nome = u.get("SignatarioNome", "")
-            signatario_cargo = u.get("SignatarioCargo", "")
+            signatario_nome = u.get("signatarioNome", "")
+            signatario_cargo = u.get("signatarioCargo", "")
             break # Encontrou o usuário logado, pode sair do loop
     # --- FIM ADAPTAÇÃO SUPABASE ---
 
@@ -1091,8 +1091,8 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     usuario_atual_email = st.session_state.get('usuario_atual_email')
     for u in st.session_state.get('usuarios', []):
         if u.get('email') == usuario_atual_email:
-            signatario_nome = u.get("SignatarioNome", "")
-            signatario_cargo = u.get("SignatarioCargo", "")
+            signatario_nome = u.get("signatarioNome", "")
+            signatario_cargo = u.get("signatarioCargo", "")
             break # Encontrou o usuário logado
     # --- FIM ADAPTAÇÃO SUPABASE ---
 
