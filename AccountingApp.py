@@ -334,35 +334,38 @@ def pagina_login():
     col1, col2 = st.columns([1, 1])
 
     with col2:
-        st.markdown(
-            """
-            <style>
-            .button-hover-effect {
-                display: inline-block;
-                width: 100%;
-                padding: 0.5em 1em;
-                background-color: #003548;
-                color: #ffffff;
-                text-align: center;
-                text-decoration: none;
-                border-radius: 8px;
-                font-weight: 600;
-                font-size: 16px;
-                border: none;
-                transition: background-color 0.3s ease;
-            }
-            .button-hover-effect:hover {
-                background-color: #D6110F;
-                color: white;
-            }
-            </style>
-    
-            <a href='https://juniorfernandes.com/produtos' target='_blank' class='button-hover-effect'>
-                Tenha acesso à todos os produtos
-            </a>
-            """,
-            unsafe_allow_html=True
-        )
+    st.markdown(
+        """
+        <style>
+        .button-hover-effect {
+            display: inline-block;
+            width: 100%;
+            padding: 0.5em 1em;
+            background-color: #003548;
+            color: #ffffff !important;
+            text-align: center;
+            text-decoration: none !important;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            border: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .button-hover-effect:hover {
+            background-color: #D6110F;
+            color: #ffffff !important;
+            text-decoration: none !important;
+        }
+        </style>
+
+        <a href='https://juniorfernandes.com/produtos' target='_blank' class='button-hover-effect'>
+            Tenha acesso à todos os produtos
+        </a>
+        """,
+        unsafe_allow_html=True
+    )
+
 
 
 
