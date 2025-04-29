@@ -787,6 +787,28 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
     pdf.cell(0, 10, report_title.encode('latin1', 'replace').decode('latin1'), 0, 1, 'C')
     pdf.ln(10)
 
+    # --- RESUMO FINANCEIRO ANTES DA TABELA ---
+    total_receitas = sum(l.get("Valor", 0) for l in lancamentos_list if l.get("Tipo de Lançamento") == "Receita")
+    total_despesas = sum(l.get("Valor", 0) for l in lancamentos_list if l.get("Tipo de Lançamento") == "Despesa")
+    saldo = total_receitas - total_despesas
+    
+    pdf.set_font(font_for_table, 'B', 11)
+    pdf.cell(0, 10, "Resumo Financeiro", 0, 1, 'L')
+    
+    pdf.set_font(font_for_table, '', 10)
+    pdf.cell(60, 8, "Total de Entradas:", 0, 0, 'L')
+    pdf.cell(0, 8, f"R$ {total_receitas:.2f}".replace('.', ','), 0, 1, 'R')
+    
+    pdf.cell(60, 8, "Total de Saídas:", 0, 0, 'L')
+    pdf.cell(0, 8, f"R$ {total_despesas:.2f}".replace('.', ','), 0, 1, 'R')
+    
+    pdf.cell(60, 8, "Saldo do Período:", 0, 0, 'L')
+    pdf.cell(0, 8, f"R$ {saldo:.2f}".replace('.', ','), 0, 1, 'R')
+    
+    pdf.ln(5)  # Espaço antes da tabela
+    # --- FIM DO RESUMO ---
+
+
     # Usa a fonte com suporte a acentos (se carregada) ou a padrão para os cabeçalhos e dados da tabela
     pdf.set_font(font_for_table, 'B', 10) # Cabeçalhos em negrito
     col_widths = [20, 90, 40, 20, 25]
