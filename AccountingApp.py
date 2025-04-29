@@ -334,37 +334,37 @@ def pagina_login():
     col1, col2 = st.columns([1, 1])
 
     with col2:
-    st.markdown(
-        """
-        <style>
-        /* Define uma classe para o botão e move os estilos inline para cá */
-        .button-hover-effect {
-            width: 100%;
-            padding: 8px;
-            background-color: #003548;
-            color: #ffffff;
-            border-radius: 8px;
-            border: none;
-            cursor: pointer;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            transition: background-color 0.3s ease;
-        }
+        st.markdown(
+            """
+            <style>
+            /* Define uma classe para o botão e move os estilos inline para cá */
+            .button-hover-effect {
+                width: 100%;
+                padding: 8px;
+                background-color: #003548;
+                color: #ffffff;
+                border-radius: 8px;
+                border: none;
+                cursor: pointer;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                transition: background-color 0.3s ease;
+            }
 
-        .button-hover-effect:hover {
-            background-color: red;
-            color: white;
-        }
-        </style>
+            .button-hover-effect:hover {
+                background-color: red;
+                color: white;
+            }
+            </style>
 
-        <a href='https://juniorfernandes.com/produtos' target='_blank' class='button-hover-effect'>
-            Tenha acesso à todos os produtos
-        </a>
-        """,
-        unsafe_allow_html=True
-    )
+            <a href='https://juniorfernandes.com/produtos' target='_blank' class='button-hover-effect'>
+                Tenha acesso à todos os produtos
+            </a>
+            """,
+            unsafe_allow_html=True
+        )
 
 
     with col1:
