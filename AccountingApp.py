@@ -967,7 +967,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
 
     # --- Adicionar Receitas ao PDF ---
     pdf.set_font(font_for_text, 'B', 12) # Título da seção em negrito
-    pdf.set_text_color(0, 0, 255)
+    pdf.set_text_color(0, 0, 0)
     pdf.cell(0, 10, "Receitas".encode('latin1', 'replace').decode('latin1'), 0, 1, 'L')
     pdf.ln(2)
 
