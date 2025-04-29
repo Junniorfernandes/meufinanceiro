@@ -1565,6 +1565,7 @@ def pagina_configuracoes():
                     if col_del.button("Excluir", key=f"del_cat_receita_{categoria}_{i}"): # Use categoria no key para unicidade
                         novas_categorias_receita_usuario = [c for c in usuario_categorias_atuais if c != categoria]
                         dados_para_atualizar = {
+                            "id": usuario_logado_id,
                             "categorias_receita": novas_categorias_receita_usuario,
                             "email": usuario_logado.get("email")  # <- ESSENCIAL para evitar o erro
                         }
