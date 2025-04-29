@@ -1564,8 +1564,10 @@ def pagina_configuracoes():
                     # --- ADAPTAÇÃO SUPABASE: Excluir categoria da lista do usuário no DB ---
                     if col_del.button("Excluir", key=f"del_cat_receita_{categoria}_{i}"): # Use categoria no key para unicidade
                         novas_categorias_receita_usuario = [c for c in usuario_categorias_atuais if c != categoria]
-                        dados_para_atualizar = {"categorias_receita": novas_categorias_receita_usuario}
-
+                        dados_para_atualizar = {
+                            "categorias_receita": novas_categorias_receita_usuario,
+                            "email": usuario_logado.get("email")  # <- ESSENCIAL para evitar o erro
+                        }
                         if salvar_usuario_supabase({"id": usuario_logado_id, **dados_para_atualizar}): # Atualiza no Supabase
                             # A função salvar_usuario_supabase já recarrega a lista de usuários no session_state
                             # e a lógica de login/inicialização já atualiza st.session_state['todas_categorias_receita']
