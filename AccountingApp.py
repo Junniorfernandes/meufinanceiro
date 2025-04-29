@@ -231,7 +231,7 @@ def excluir_lancamento_db(lancamento_id):
     # Esta função exclui um lançamento baseado no ID do Supabase
     try:
         response = supabase.table("lancamentos").delete().eq("id", lancamento_id).execute()
-        if response.error:
+        if hasattr (response, "erro") and response.error:
             st.error(f"Erro ao excluir lançamento do Supabase: {response.error.message}")
             return False # Indica falha
         else:
