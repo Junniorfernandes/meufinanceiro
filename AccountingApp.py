@@ -366,9 +366,9 @@ def pagina_login():
             </style>
 
             <a href='https://juniorfernandes.com/produtos' target='_blank'>
-                <button class="button-hover-effect">
+                 class="button-hover-effect">
                     Tenha acesso à todos os produtos
-                </button>
+        
             </a>
             """,
             unsafe_allow_html=True
