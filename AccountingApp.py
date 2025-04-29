@@ -795,7 +795,7 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
     pdf.set_font(font_for_table, 'B', 11)
     pdf.cell(0, 8, "Resumo Financeiro", ln=True)
     
-    pdf.set_font(font_for_table, '', 10)
+    pdf.set_font(font_for_table, 'B', 10)
     
     # Entradas (normal)
     pdf.set_text_color(0, 0, 0)
