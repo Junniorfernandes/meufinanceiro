@@ -165,7 +165,7 @@ def excluir_usuario_db(user_id):
     # Esta função exclui um usuário baseado no ID do Supabase
     try:
         response = supabase.table("usuarios").delete().eq("id", user_id).execute()
-        if response.error:
+        if hasattr(response, "erro") and response.error:
             st.error(f"Erro ao excluir usuário do Supabase: {response.error.message}")
             return False # Indica falha
         else:
