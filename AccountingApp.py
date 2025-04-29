@@ -337,34 +337,33 @@ def pagina_login():
         st.markdown(
             """
             <style>
-            /* Define uma classe para o botão e move os estilos inline para cá */
             .button-hover-effect {
+                display: inline-block;
                 width: 100%;
-                padding: 8px;
+                padding: 0.5em 1em;
                 background-color: #003548;
                 color: #ffffff;
-                border-radius: 8px;
-                border: none;
-                cursor: pointer;
                 text-align: center;
                 text-decoration: none;
-                display: inline-block;
+                border-radius: 8px;
+                font-weight: 600;
                 font-size: 16px;
+                border: none;
                 transition: background-color 0.3s ease;
             }
-
             .button-hover-effect:hover {
-                background-color: red;
+                background-color: #D6110F;
                 color: white;
             }
             </style>
-
+    
             <a href='https://juniorfernandes.com/produtos' target='_blank' class='button-hover-effect'>
                 Tenha acesso à todos os produtos
             </a>
             """,
             unsafe_allow_html=True
         )
+
 
 
     with col1:
