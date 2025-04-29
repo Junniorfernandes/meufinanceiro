@@ -793,21 +793,30 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
     saldo = total_receitas - total_despesas
     
     pdf.set_font(font_for_table, 'B', 11)
-    pdf.cell(0, 10, "Resumo Financeiro", 0, 1, 'L')
+    pdf.cell(0, 8, "Resumo Financeiro", ln=True)
     
     pdf.set_font(font_for_table, '', 10)
-    pdf.cell(60, 8, "Total de Entradas:", 0, 0, 'L')
-    pdf.cell(0, 8, f"R$ {total_receitas:.2f}".replace('.', ','), 0, 1, 'R')
     
-    pdf.cell(60, 8, "Total de Saídas:", 0, 0, 'L')
-    pdf.cell(0, 8, f"R$ {total_despesas:.2f}".replace('.', ','), 0, 1, 'R')
+    # Entradas (normal)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(0, 8, f"Total de Entradas: R$ {total_receitas:.2f}".replace('.', ','), ln=True)
     
-    pdf.cell(60, 8, "Saldo do Período:", 0, 0, 'L')
-    pdf.cell(0, 8, f"R$ {saldo:.2f}".replace('.', ','), 0, 1, 'R')
+    # Saídas (vermelho)
+    pdf.set_text_color(255, 0, 0)
+    pdf.cell(0, 8, f"Total de Saídas:   R$ {total_despesas:.2f}".replace('.', ','), ln=True)
     
-    pdf.ln(5)  # Espaço antes da tabela
+    # Saldo (preto ou vermelho, dependendo do valor)
+    if saldo < 0:
+        pdf.set_text_color(255, 0, 0)
+    else:
+        pdf.set_text_color(0, 0, 255)
+    
+    pdf.cell(0, 8, f"Saldo do Período: R$ {saldo:.2f}".replace('.', ','), ln=True)
+    
+    # Resetar cor
+    pdf.set_text_color(0, 0, 0)
+    pdf.ln(5)
     # --- FIM DO RESUMO ---
-
 
     # Usa a fonte com suporte a acentos (se carregada) ou a padrão para os cabeçalhos e dados da tabela
     pdf.set_font(font_for_table, 'B', 10) # Cabeçalhos em negrito
