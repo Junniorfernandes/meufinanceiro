@@ -1068,7 +1068,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     plt.close()
 
     pdf.image(barras_path, x=55, y=pdf.get_y(), w=100)
-    pdf.ln(80)
+    pdf.ln(100)
 
     # --- Monthly Revenue Bar Chart ---
     plt.figure(figsize=(8, 4), facecolor='none')
