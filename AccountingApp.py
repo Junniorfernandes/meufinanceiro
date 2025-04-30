@@ -1918,4 +1918,3 @@ if st.session_state.get('autenticado'):
         st.session_state['editar_usuario_index'] = None
         st.session_state['show_add_modal'] = False # Garante que o modal de adicionar fecha
         st.rerun()
-
