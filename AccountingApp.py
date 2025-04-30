@@ -1070,6 +1070,114 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     pdf.image(barras_path, x=55, y=pdf.get_y(), w=100)
     pdf.ln(80)
 
+    # --- Monthly Revenue Bar Chart ---
+    plt.figure(figsize=(8, 4), facecolor='none')
+    
+    # Process data for monthly revenue chart
+    monthly_revenue = {}
+    for lancamento in lancamentos_list:
+        if lancamento.get("Tipo de Lançamento") == "Receita":
+            try:
+                # Extract month from date
+                date_obj = datetime.strptime(lancamento.get("Data", '1900-01-01'), "%Y-%m-%d")
+                month_key = date_obj.strftime("%b")  # Short month name
+                month_num = date_obj.month  # Month number for sorting
+                
+                if month_key not in monthly_revenue:
+                    monthly_revenue[month_key] = {"value": 0, "month_num": month_num}
+                monthly_revenue[month_key]["value"] += lancamento.get("Valor", 0)
+            except ValueError:
+                continue
+    
+    # Sort months chronologically
+    sorted_months = sorted(monthly_revenue.items(), key=lambda x: x[1]["month_num"])
+    months = [m[0] for m in sorted_months]
+    revenue_values = [m[1]["value"] for m in sorted_months]
+    
+    # Create the revenue bar chart
+    ax = plt.gca()
+    for spine in ax.spines.values():
+        spine.set_visible(False)  # Remove border
+    
+    bars = plt.bar(months, revenue_values, color=(0, 0, 255))  # Blue color as requested
+    
+    # Add value labels on top of bars
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2., height + max(revenue_values)*0.02,
+                f'R$ {height:.2f}', ha='center', va='bottom', fontsize=9, fontweight='bold', color='white')
+    
+    plt.title('Receita Mensal', fontsize=12, fontweight='bold', color='#003548', pad=20)
+    plt.ylabel('Valores (R$)', fontsize=10, fontweight='bold')
+    plt.xticks(fontsize=10, fontweight='bold')
+    plt.yticks(fontsize=9)
+    plt.tight_layout()
+    
+    # Set background color for the bars to ensure white text is visible
+    for bar in bars:
+        bar.set_edgecolor('none')
+    
+    revenue_bars_path = f"/tmp/revenue_bars_{uuid.uuid4().hex}.png"
+    plt.savefig(revenue_bars_path, bbox_inches='tight', transparent=True, dpi=300)
+    plt.close()
+    
+    pdf.image(revenue_bars_path, x=30, y=pdf.get_y(), w=150)
+    pdf.ln(80)
+    
+    # --- Monthly Expense Bar Chart ---
+    plt.figure(figsize=(8, 4), facecolor='none')
+    
+    # Process data for monthly expense chart
+    monthly_expense = {}
+    for lancamento in lancamentos_list:
+        if lancamento.get("Tipo de Lançamento") == "Despesa":
+            try:
+                # Extract month from date
+                date_obj = datetime.strptime(lancamento.get("Data", '1900-01-01'), "%Y-%m-%d")
+                month_key = date_obj.strftime("%b")  # Short month name
+                month_num = date_obj.month  # Month number for sorting
+                
+                if month_key not in monthly_expense:
+                    monthly_expense[month_key] = {"value": 0, "month_num": month_num}
+                monthly_expense[month_key]["value"] += lancamento.get("Valor", 0)
+            except ValueError:
+                continue
+    
+    # Sort months chronologically
+    sorted_months = sorted(monthly_expense.items(), key=lambda x: x[1]["month_num"])
+    months = [m[0] for m in sorted_months]
+    expense_values = [m[1]["value"] for m in sorted_months]
+    
+    # Create the expense bar chart
+    ax = plt.gca()
+    for spine in ax.spines.values():
+        spine.set_visible(False)  # Remove border
+    
+    bars = plt.bar(months, expense_values, color=(255, 0, 0))  # Red color as requested
+    
+    # Add value labels on top of bars
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2., height + max(expense_values)*0.02 if expense_values else 0,
+                f'R$ {height:.2f}', ha='center', va='bottom', fontsize=9, fontweight='bold', color='white')
+    
+    plt.title('Despesa Mensal', fontsize=12, fontweight='bold', color='#003548', pad=20)
+    plt.ylabel('Valores (R$)', fontsize=10, fontweight='bold')
+    plt.xticks(fontsize=10, fontweight='bold')
+    plt.yticks(fontsize=9)
+    plt.tight_layout()
+    
+    # Set background color for the bars to ensure white text is visible
+    for bar in bars:
+        bar.set_edgecolor('none')
+    
+    expense_bars_path = f"/tmp/expense_bars_{uuid.uuid4().hex}.png"
+    plt.savefig(expense_bars_path, bbox_inches='tight', transparent=True, dpi=300)
+    plt.close()
+    
+    pdf.image(expense_bars_path, x=30, y=pdf.get_y(), w=150)
+    pdf.ln(80)
+
     #pdf.add_page()  # <<<< QUEBRA AQUI PARA NOVA PÁGINA
     pdf.cell(0, 15, "", 0, 1)
 
