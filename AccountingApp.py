@@ -1099,7 +1099,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     for spine in ax.spines.values():
         spine.set_visible(False)  # Remove border
     
-    bars = plt.bar(months, revenue_values, color=(0, 0, 255))  # Blue color as requested
+    bars = plt.bar(months, revenue_values, color='#0000FF')  # Blue color as requested
     
     # Add value labels on top of bars
     for bar in bars:
@@ -1153,7 +1153,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     for spine in ax.spines.values():
         spine.set_visible(False)  # Remove border
     
-    bars = plt.bar(months, expense_values, color=(255, 0, 0))  # Red color as requested
+    bars = plt.bar(months, expense_values, color='#FF0000')  # Red color as requested
     
     # Add value labels on top of bars
     for bar in bars:
