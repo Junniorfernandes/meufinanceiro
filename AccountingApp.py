@@ -818,6 +818,10 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
     pdf.ln(5)
     # --- FIM DO RESUMO ---
 
+    y_atual = pdf.get_y()
+    pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
+    pdf.ln(5)
+
     # Usa a fonte com suporte a acentos (se carregada) ou a padrão para os cabeçalhos e dados da tabela
     pdf.set_font(font_for_table, 'B', 10) # Cabeçalhos em negrito
     col_widths = [20, 90, 40, 20, 25]
