@@ -1073,24 +1073,9 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     # --- Monthly Revenue Bar Chart ---
     plt.figure(figsize=(8, 4), facecolor='none')
     
-    # Get all transactions regardless of date filter
-    all_lancamentos = st.session_state.get("lancamentos", [])
-    # Filter by user if needed
-    if usuario_email := st.session_state.get('usuario_atual_email'):
-        all_lancamentos = [l for l in all_lancamentos if l.get('user_email') == usuario_email]
-    elif usuario_selecionado_nome != "Todos os Usuários":
-        # Find the email of the selected user by name
-        usuario_selecionado_email = None
-        for u in st.session_state.get('usuarios', []):
-            if u.get('nome', 'Usuário Sem Nome') == usuario_selecionado_nome:
-                usuario_selecionado_email = u.get('email')
-                break
-        if usuario_selecionado_email:
-            all_lancamentos = [l for l in all_lancamentos if l.get('user_email') == usuario_selecionado_email]
-    
     # Process data for monthly revenue chart
     monthly_revenue = {}
-    for lancamento in all_lancamentos:
+    for lancamento in lancamentos_list:
         if lancamento.get("Tipo de Lançamento") == "Receita":
             try:
                 # Extract month from date
@@ -1114,14 +1099,13 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     for spine in ax.spines.values():
         spine.set_visible(False)  # Remove border
     
-    bars = plt.bar(months, revenue_values, color='#0000FF')  # Blue color as hex
+    bars = plt.bar(months, revenue_values, color='#0000FF')  # Blue color as requested
     
     # Add value labels on top of bars
-    if revenue_values:
-        for bar in bars:
-            height = bar.get_height()
-            plt.text(bar.get_x() + bar.get_width()/2., height + max(revenue_values)*0.02,
-                    f'R$ {height:.2f}', ha='center', va='bottom', fontsize=9, fontweight='bold', color='white')
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2., height + max(revenue_values)*0.02,
+                f'R$ {height:.2f}', ha='center', va='bottom', fontsize=9, fontweight='bold', color='white')
     
     plt.title('Receita Mensal', fontsize=12, fontweight='bold', color='#003548', pad=20)
     plt.ylabel('Valores (R$)', fontsize=10, fontweight='bold')
@@ -1145,7 +1129,7 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     
     # Process data for monthly expense chart
     monthly_expense = {}
-    for lancamento in all_lancamentos:  # Using all_lancamentos instead of filtered list
+    for lancamento in lancamentos_list:
         if lancamento.get("Tipo de Lançamento") == "Despesa":
             try:
                 # Extract month from date
@@ -1169,14 +1153,13 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     for spine in ax.spines.values():
         spine.set_visible(False)  # Remove border
     
-    bars = plt.bar(months, expense_values, color='#FF0000')  # Red color as hex
+    bars = plt.bar(months, expense_values, color='#FF0000')  # Red color as requested
     
     # Add value labels on top of bars
-    if expense_values:
-        for bar in bars:
-            height = bar.get_height()
-            plt.text(bar.get_x() + bar.get_width()/2., height + max(expense_values)*0.02,
-                    f'R$ {height:.2f}', ha='center', va='bottom', fontsize=9, fontweight='bold', color='white')
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2., height + max(expense_values)*0.02 if expense_values else 0,
+                f'R$ {height:.2f}', ha='center', va='bottom', fontsize=9, fontweight='bold', color='white')
     
     plt.title('Despesa Mensal', fontsize=12, fontweight='bold', color='#003548', pad=20)
     plt.ylabel('Valores (R$)', fontsize=10, fontweight='bold')
