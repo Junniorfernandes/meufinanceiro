@@ -1105,12 +1105,12 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     for bar in bars:
         height = bar.get_height()
         plt.text(bar.get_x() + bar.get_width()/2.0, height + max(revenue_values)*0.02,
-                f'R$ {height:.2f}', ha='center', va='bottom', fontsize=9, fontweight='bold', color='black')
+                f'R$ {height:.2f}', ha='center', va='bottom', fontsize=12, fontweight='bold', color='black')
     
-    plt.title('Receita Mensal', fontsize=12, fontweight='bold', color='#003548', pad=20)
-    plt.ylabel('Valores (R$)', fontsize=10, fontweight='bold')
-    plt.xticks(fontsize=10, fontweight='bold')
-    plt.yticks(fontsize=9)
+    plt.title('Receita Mensal', fontsize=14, fontweight='bold', color='#003548', pad=20)
+    plt.ylabel('Valores (R$)', fontsize=12, fontweight='bold')
+    plt.xticks(fontsize=12, fontweight='bold')
+    plt.yticks(fontsize=10)
     plt.tight_layout()
     
     # Set background color for the bars to ensure white text is visible
@@ -1159,12 +1159,12 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     for bar in bars:
         height = bar.get_height()
         plt.text(bar.get_x() + bar.get_width()/2., height + max(expense_values)*0.02 if expense_values else 0,
-                f'R$ {height:.2f}', ha='center', va='bottom', fontsize=9, fontweight='bold', color='white')
+                f'R$ {height:.2f}', ha='center', va='bottom', fontsize=12, fontweight='bold', color='black')
     
-    plt.title('Despesa Mensal', fontsize=12, fontweight='bold', color='#003548', pad=20)
-    plt.ylabel('Valores (R$)', fontsize=10, fontweight='bold')
-    plt.xticks(fontsize=10, fontweight='bold')
-    plt.yticks(fontsize=9)
+    plt.title('Despesa Mensal', fontsize=14, fontweight='bold', color='#003548', pad=20)
+    plt.ylabel('Valores (R$)', fontsize=12, fontweight='bold')
+    plt.xticks(fontsize=12, fontweight='bold')
+    plt.yticks(fontsize=10)
     plt.tight_layout()
     
     # Set background color for the bars to ensure white text is visible
