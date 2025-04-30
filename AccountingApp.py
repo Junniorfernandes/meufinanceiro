@@ -420,22 +420,40 @@ def render_add_lancamento_form():
             # Cria um placeholder para a Categoria
             categoria_placeholder = st.empty()
 
-            categorias = ""  # Inicializa a variável de categoria
-            # Só exibe o campo Categoria dentro do placeholder se o tipo for Receita (conforme original)
-            if tipo == "Receita":
-                # Usa a lista combinada de categorias de receita do usuário logado
-                categorias_disponiveis = st.session_state.get('todas_categorias_receita', CATEGORIAS_PADRAO_RECEITA)
-                categorias = categoria_placeholder.selectbox(
-                    "Categoria de Receitas",
-                    categorias_disponiveis,
-                    key="add_lanc_categoria_receita_form"
-                )
-            elif tipo == "Despesa":
-                categorias = categoria_placeholder.selectbox(
-                    "Categoria de Despesas",
-                    ["Despesas Operacionais", "Imobilizado", "Outras"],
-                    key="add_lanc_categoria_despesa_form"
-                )
+                categorias = ""  # Inicializa a variável de categoria
+                # Só exibe o campo Categoria dentro do placeholder se o tipo for Receita (conforme original)
+                if tipo == "Receita":
+                    current_category = lancamento_a_editar.get("Categorias", "")
+                    categorias_disponiveis = st.session_state.get('todas_categorias_receita', CATEGORIAS_PADRAO_RECEITA)
+                
+                    try:
+                        default_index = categorias_disponiveis.index(current_category)
+                    except ValueError:
+                        default_index = 0
+                
+                    categoria = categoria_placeholder.selectbox(
+                        "Categoria",
+                        categorias_disponiveis,
+                        index=default_index,
+                        key=f"edit_lanc_categoria_receita_form_{lancamento_id}",
+                    )
+                
+                elif tipo == "Despesa":
+                    categorias_despesa = ["Despesas Operacionais", "Imobilizado", "Outras"]
+                    current_category = lancamento_a_editar.get("Categorias", "")
+                
+                    try:
+                        default_index = categorias_despesa.index(current_category)
+                    except ValueError:
+                        default_index = 0
+                
+                    categoria = categoria_placeholder.selectbox(
+                        "Categoria de Despesas",
+                        categorias_despesa,
+                        index=default_index,
+                        key=f"edit_lanc_categoria_despesa_form_{lancamento_id}",
+                    )
+
 
             # Se o tipo não for Receita, o placeholder permanece vazio, e 'categorias' continua ""
             # Seu código original não tinha seleção de categoria para Despesa aqui.
