@@ -817,7 +817,9 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
     pdf.set_text_color(0, 0, 0)
     pdf.ln(5)
     # --- FIM DO RESUMO ---
-
+    #Subtitle relatório de laçamentos
+    plt.title('Relatório de Lançamentos', fontsize=12, fontweight='bold', color='#003548', pad=20)
+    
     y_atual = pdf.get_y()
     pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
     pdf.ln(5)
