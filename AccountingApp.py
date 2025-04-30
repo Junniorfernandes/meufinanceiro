@@ -1053,11 +1053,10 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
 
     barras = plt.bar(categorias_grafico_barras, valores_grafico_barras, color=cores_barras)
 
-    for bar in bars:
-        height = bar.get_height()
-        plt.text(bar.get_x() + bar.get_width()/2., height + max(revenue_values)*0.02,
-                f'R$ {height:.2f}', ha='center', va='bottom', fontsize=10, fontweight='bold', color='black')
-        
+    for bar in barras:
+        yval = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2.0, yval + max(valores_grafico_barras)*0.02, f"R$ {yval:.2f}", ha='center', va='bottom', fontsize=10, fontweight='bold', color='black')
+
     plt.title('Comparativo de Receita x Despesa', fontsize=12, fontweight='bold', color='#003548', pad=20)
     plt.ylabel('Valores (R$)', fontsize=10, fontweight='bold')
     plt.xticks(fontsize=10, fontweight='bold')
@@ -1103,9 +1102,10 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     bars = plt.bar(months, revenue_values, color='#00163C')  # Blue color as requested
     
     # Add value labels on top of bars
-    for bar in barras:
-        yval = bar.get_height()
-        plt.text(bar.get_x() + bar.get_width()/2.0, yval + max(valores_grafico_barras)*0.02, f"R$ {yval:.2f}", ha='center', va='bottom', fontsize=10, fontweight='bold', color='black')
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(bar.get_x() + bar.get_width()/2.0, height + max(revenue_values)*0.02,
+                f'R$ {height:.2f}', ha='center', va='bottom', fontsize=9, fontweight='bold', color='black')
     
     plt.title('Receita Mensal', fontsize=12, fontweight='bold', color='#003548', pad=20)
     plt.ylabel('Valores (R$)', fontsize=10, fontweight='bold')
