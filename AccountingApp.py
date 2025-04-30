@@ -817,10 +817,6 @@ def exportar_lancamentos_para_pdf(lancamentos_list, usuario_nome="Usuário"):
     pdf.set_text_color(0, 0, 0)
     pdf.ln(5)
     # --- FIM DO RESUMO ---
-    
-    y_atual = pdf.get_y()
-    pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
-    pdf.ln(5)
 
     # Usa a fonte com suporte a acentos (se carregada) ou a padrão para os cabeçalhos e dados da tabela
     pdf.set_font(font_for_table, 'B', 10) # Cabeçalhos em negrito
@@ -914,7 +910,7 @@ def criar_grafico_donut(receitas_por_categoria):
         autotext.set_fontsize(14)     # Tamanho da fonte percentual
         autotext.set_weight('bold')   # ← corrigido aqui
 
-    plt.title('Distribuição de Receitas', fontsize=20, fontweight='bold', color='#003548')
+    plt.title('Distribuição de Receitas', fontsize=16, fontweight='bold', color='#003548')
 
 
     temp_filename = f"/tmp/donut_{uuid.uuid4().hex}.png"
@@ -1074,10 +1070,6 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     pdf.image(barras_path, x=55, y=pdf.get_y(), w=100)
     pdf.ln(100)
 
-    y_atual = pdf.get_y()
-    pdf.line(10, y_atual, 200, y_atual)  # linha horizontal de margem a margem
-    pdf.ln(5)
-
     # --- Monthly Revenue Bar Chart ---
     plt.figure(figsize=(8, 4), facecolor='none')
     
@@ -1112,13 +1104,13 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     # Add value labels on top of bars
     for bar in bars:
         height = bar.get_height()
-        plt.text(bar.get_x() + bar.get_width()/2.0, height + max(revenue_values)*0.02,
-                f'R$ {height:.2f}', ha='center', va='bottom', fontsize=14, fontweight='bold', color='black')
+        plt.text(bar.get_x() + bar.get_width()/2., height + max(revenue_values)*0.02,
+                f'R$ {height:.2f}', ha='center', va='bottom', fontsize=9, fontweight='bold', color='white')
     
-    plt.title('Receita Mensal', fontsize=16, fontweight='bold', color='#003548', pad=20)
-    plt.ylabel('Valores (R$)', fontsize=14, fontweight='bold')
-    plt.xticks(fontsize=14, fontweight='bold')
-    plt.yticks(fontsize=12)
+    plt.title('Receita Mensal', fontsize=12, fontweight='bold', color='#003548', pad=20)
+    plt.ylabel('Valores (R$)', fontsize=10, fontweight='bold')
+    plt.xticks(fontsize=10, fontweight='bold')
+    plt.yticks(fontsize=9)
     plt.tight_layout()
     
     # Set background color for the bars to ensure white text is visible
@@ -1167,12 +1159,12 @@ def gerar_demonstracao_resultados_pdf(lancamentos_list, usuario_nome="Usuário")
     for bar in bars:
         height = bar.get_height()
         plt.text(bar.get_x() + bar.get_width()/2., height + max(expense_values)*0.02 if expense_values else 0,
-                f'R$ {height:.2f}', ha='center', va='bottom', fontsize=14, fontweight='bold', color='black')
+                f'R$ {height:.2f}', ha='center', va='bottom', fontsize=9, fontweight='bold', color='white')
     
-    plt.title('Despesa Mensal', fontsize=16, fontweight='bold', color='#003548', pad=20)
-    plt.ylabel('Valores (R$)', fontsize=14, fontweight='bold')
-    plt.xticks(fontsize=14, fontweight='bold')
-    plt.yticks(fontsize=12)
+    plt.title('Despesa Mensal', fontsize=12, fontweight='bold', color='#003548', pad=20)
+    plt.ylabel('Valores (R$)', fontsize=10, fontweight='bold')
+    plt.xticks(fontsize=10, fontweight='bold')
+    plt.yticks(fontsize=9)
     plt.tight_layout()
     
     # Set background color for the bars to ensure white text is visible
