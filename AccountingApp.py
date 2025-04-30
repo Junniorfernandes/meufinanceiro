@@ -910,7 +910,7 @@ def criar_grafico_donut(receitas_por_categoria):
         autotext.set_fontsize(14)     # Tamanho da fonte percentual
         autotext.set_weight('bold')   # ← corrigido aqui
 
-    plt.title('Distribuição de Receitas', fontsize=16, fontweight='bold', color='#003548')
+    plt.title('Distribuição de Receitas', fontsize=20, fontweight='bold', color='#003548')
 
 
     temp_filename = f"/tmp/donut_{uuid.uuid4().hex}.png"
