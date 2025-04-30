@@ -430,6 +430,12 @@ def render_add_lancamento_form():
                     categorias_disponiveis,
                     key="add_lanc_categoria_receita_form"
                 )
+            elif tipo == "Despesa":
+                categorias = categoria_placeholder.selectbox(
+                    "Categoria de Despesas",
+                    ["Despesas Operacionais", "Imobilizado", "Outras"],
+                    key="add_lanc_categoria_despesa_form"
+                )
 
             # Se o tipo não for Receita, o placeholder permanece vazio, e 'categorias' continua ""
             # Seu código original não tinha seleção de categoria para Despesa aqui.
